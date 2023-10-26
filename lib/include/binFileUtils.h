@@ -4,13 +4,13 @@
 #include <stdio.h>
 #include <stdint.h>
 
-typedef uint8_t Byte;
+typedef uint8_t byte_t;
 
 
 /// @brief struct that holds file contents
 struct BinData {
-    Byte* buf;      ///< buffer that holds file string
-    size_t bufSz; ///< size of buffer in bytes
+  byte_t* buf;  ///< buffer that holds file string
+  size_t bufSz; ///< size of buffer in bytes
 };
 
 

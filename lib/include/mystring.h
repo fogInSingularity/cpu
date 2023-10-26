@@ -2,11 +2,16 @@
 #define MYSTRING_H
 
 #include <stdio.h>
+#include <string.h>
 
-/// @brief holds string
+/// @brief string type
 struct String {
-    char* str;   ///< string intself
-    ssize_t len; ///< len of string
+  char* str;   ///< string intself
+  size_t len; ///< len of string
 };
+
+char* Strchr(String* str, char ch);
+
+int Strcmp(String* strA, String* strB);
 
 #endif

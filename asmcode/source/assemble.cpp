@@ -2,133 +2,273 @@
 
 //-----------------------------------------
 
+static size_t Walkthrough = 0;
+
 static size_t MinBinBufAlloc = 64;
 
-static AsmState ParseAndStore(String* line, BinBuf* binBuf);
+static void ParseAndStore(String* line, BinBuf* binBuf, DArray* labelArr);
 
-// static void PutHex(FILE* file, int n);
+static void PutJmp(cmdKey_t cmdKey, jmpAdr_t jmpAdr, BinBuf* binBuf);
+static void PutNoArgs(cmdKey_t cmdKey, BinBuf* binbuf);
+static void PutImmed(cmdKey_t cmdKey, immed_t immed, BinBuf* binBuf);
+static void PutReg(cmdKey_t cmdKey, regId_t reg, BinBuf* binBuf);
+static void PutBoth(cmdKey_t cmdKey, regId_t reg, immed_t immed, BinBuf* binBuf);
 
-// static void PutHex(FILE* file, uint8_t n);
+static Args GetArgs(char* str, char* holdReg, immed_t* holdImmed);
+static void GetJmpAdr(char* str, char* holdJmpLbl, jmpAdr_t* jmpAdr, DArray* labelArr);
 
 //-----------------------------------------
 
-AsmState Assemble(FileData* input, FILE* output) {
-    ASSERT(input != nullptr);
-    ASSERT(output != nullptr);
+void Assemble(FileData* input, FILE* output) {
+  ASSERT(input != nullptr);
+  ASSERT(output != nullptr);
 
-    AsmState state = {SUCCESS, 0};
+  BinBuf binBuf = {nullptr, 0, 0};
+  binBuf.buf = (byte_t*)calloc(MinBinBufAlloc, sizeof(byte_t)); //TODO - add check
+  binBuf.cap = MinBinBufAlloc;
+  binBuf.size = 0;
 
-    BinBuf binBuf = {nullptr, 0, 0};
+  Assembler assembler = {binBuf, {nullptr, 0, 0, 0}, *input, output};
+  DArrayCtor(&assembler.labelArr, sizeof(Label));
 
-    binBuf.buf = (Byte*)calloc(MinBinBufAlloc, sizeof(Byte)); //TODO - add check
-    binBuf.cap = MinBinBufAlloc;
-    binBuf.size = 0;
+  String* text = nullptr;
 
-    String* text = input->text;
+  //++++++++++[проход проход]++++++++++
+  text = input->text;
+  Walkthrough++;
 
-    while (text < input->text + input->nLines) {
-        state = ParseAndStore(text, &binBuf);
+  while (text < input->text + input->nLines) {
+    ParseAndStore(text, &binBuf, &assembler.labelArr);
 
-        text++;
-    }
+    text++;
+  }
+  //++++++++++[конец прохода]++++++++++
+  binBuf.size = 0;
+  //++++++++++[второй проход]++++++++++
+  text = input->text;
+  Walkthrough++;
 
-    binBuf.buf = (Byte*)realloc(binBuf.buf, binBuf.size);
+  while (text < input->text + input->nLines) {
+    ParseAndStore(text, &binBuf, &assembler.labelArr);
 
-    fwrite(binBuf.buf, sizeof(Byte), binBuf.size, output);
+    text++;
+  }
+  //++++++++++[конец прохода]++++++++++
 
-    free(binBuf.buf);
-    binBuf.buf = nullptr;
+  fwrite(binBuf.buf, sizeof(byte_t), binBuf.size, output);
 
-    return state;
+  DArrayDtor(&assembler.labelArr);
+  free(binBuf.buf);
+  binBuf.buf = nullptr;
+}
+
+void DumpLabel(void* label) {
+  Label lbl = *(Label*)label;
+
+  fprintf(stderr, "{ ");
+
+  fprintf(stderr, "{ ");
+  for (size_t i = 0; i < lbl.name.len; i++) {
+      fputc(lbl.name.str[i], stderr);
+  }
+  fprintf(stderr, " } ");
+
+  fprintf(stderr, "{ ");
+  fprintf(stderr, "%lu", lbl.name.len);
+  fprintf(stderr, " } ");
+
+  fprintf(stderr, "{ ");
+  fprintf(stderr, "%lf", lbl.pos);
+  fprintf(stderr, " }");
+
+  fprintf(stderr, " }");
 }
 
 //-----------------------------------------
 
-static AsmState ParseAndStore(String* line, BinBuf* binBuf) {
-    ASSERT(line        != nullptr);
-    ASSERT(binBuf      != nullptr);
-    ASSERT(binBuf->buf != nullptr);
+// push [rax + 5]
+// push [rax]
+// push [5]
+// push rax + 5
+// push rax
+// push 5
 
-    AsmState state = {SUCCESS, 0};
+#define DEF_CMD(name, num, isJump, aldArgs, ...) \
+  if (strcmp(holdCommand, #name) == 0) { \
+    if (isJump) { \
+      if (Walkthrough == 1) { \
+        cmdKey_t cmdKey = 0 | num | BitFlags::ARG_IMMED; \
+        jmpAdr_t jmpAdr = 0; \
+\
+        PutJmp(cmdKey, jmpAdr, binBuf); \
+      } else { \
+        cmdKey_t cmdKey = 0 | num | BitFlags::ARG_IMMED; \
+        jmpAdr_t jmpAdr = 0; \
+\
+        GetJmpAdr(line->str, holdJmpLbl, &jmpAdr, labelArr); \
+\
+        PutJmp(cmdKey, jmpAdr, binBuf); \
+      } \
+    } else if (haveArgs) { \
+      Args nArgs = GetArgs(line->str, holdRegArg, &holdImmedArg); \
+      switch (nArgs) { \
+        case Args::REG_AND_IMMED: { \
+          cmdKey_t cmdKey = 0 | num | BitFlags::ARG_IMMED | BitFlags::ARG_REG; \
+          regId_t reg = (regId_t)RegIds[holdRegArg[1] - 'a']; \
+          immed_t immed = holdImmedArg; \
+\
+          PutBoth(cmdKey, reg, immed, binBuf); \
+          break; \
+        } \
+        case Args::ONLY_REG: { \
+          cmdKey_t cmdKey = 0 | num | BitFlags::ARG_REG; \
+          regId_t reg = (regId_t)RegIds[holdRegArg[1] - 'a']; \
+\
+          PutReg(cmdKey, reg, binBuf); \
+          break; \
+        } \
+        case Args::ONLY_IMMED: { \
+          cmdKey_t cmdKey = 0 | num | BitFlags::ARG_IMMED; \
+          immed_t immed = holdImmedArg; \
+\
+          PutImmed(cmdKey, immed, binBuf); \
+          break; \
+        } \
+        case Args::NO_ARGS: { \
+          break; \
+        } \
+        case Args::INIT_ARGS: {} \
+        default: { \
+          ASSERT(0 && "!  unknown number of args"); \
+          break; \
+        } \
+      } \
+    } else { \
+      PutNoArgs(num, binBuf); \
+    } \
+  } else
+
+static void ParseAndStore(String* line, BinBuf* binBuf, DArray* labelArr) {
+    ASSERT(line            != nullptr);
+    ASSERT(binBuf          != nullptr);
+    ASSERT(binBuf->buf     != nullptr);
+    ASSERT(labelArr        != nullptr);
+    ASSERT(labelArr->array != nullptr);
 
     char holdCommand[100] = "";
-    char holdStrArg[100] = "";
-    int holdIntArg = 0;
+    char holdRegArg[100] = "";
+    char holdJmpLbl[100] = "";
+    immed_t holdImmedArg = 0;
 
-    size_t cmdPos = 0;
-
-    while (cmdPos <  CommandCount) {
-
-        if (strncmp(CommandNames[cmdPos], line->str, strlen(CommandNames[cmdPos])) == 0) {
-            if (sscanf(line->str, "%s %d", holdCommand, &holdIntArg) == 2) { // команда число
-                uint8_t code = 0b0000'0000;
-
-                code |= CommandIds[cmdPos] & CODE_ID_MASK;
-                code |= ARG_FORMAT_IMMED;
-
-                int cnst = holdIntArg;
-
-                if (binBuf->cap - binBuf->size < sizeof(cnst) + sizeof(code)) {
-                    binBuf->cap *= 2;
-                    binBuf->buf = (Byte*)realloc(binBuf->buf, binBuf->cap);
-                }
-
-                memcpy(binBuf->buf + binBuf->size, &code, sizeof(code));
-                binBuf->size += sizeof(code);
-                memcpy(binBuf->buf + binBuf->size, &cnst, sizeof(cnst));
-                binBuf->size += sizeof(cnst);
-            } else if (sscanf(line->str, "%s %s %d", holdCommand, holdStrArg, &holdIntArg) == 3) { // команда регистр число
-                uint8_t code = 0b0000'0000;
-
-                code |= CommandIds[cmdPos] & CODE_ID_MASK;
-                code |= ARG_FORMAT_IMMED | ARG_FORMAT_REG;
-
-                int reg = RegIds[holdStrArg[1] - 'a'];
-                int cnst = holdIntArg;
-
-                if (binBuf->cap - binBuf->size < sizeof(cnst) + sizeof(code) + sizeof(reg)) {
-                    binBuf->cap *= 2;
-                    binBuf->buf = (Byte*)realloc(binBuf->buf, binBuf->cap);
-                }
-
-                memcpy(binBuf->buf + binBuf->size, &code, sizeof(code));
-                binBuf->size += sizeof(code);
-                memcpy(binBuf->buf + binBuf->size, &reg, sizeof(reg));
-                binBuf->size += sizeof(reg);
-                memcpy(binBuf->buf + binBuf->size, &cnst, sizeof(cnst));
-                binBuf->size += sizeof(cnst);
-            } else if (sscanf(line->str, "%s %s", holdCommand, holdStrArg) == 2) { // команда регистр
-                uint8_t code = 0b0000'0000;
-
-                code |= CommandIds[cmdPos] & CODE_ID_MASK;
-                code |= ARG_FORMAT_REG;
-
-                int reg = RegIds[holdStrArg[1] - 'a'];
-
-                if (binBuf->cap - binBuf->size <sizeof(code) + sizeof(reg)) {
-                    binBuf->cap *= 2;
-                    binBuf->buf = (Byte*)realloc(binBuf->buf, binBuf->cap);
-                }
-
-                memcpy(binBuf->buf + binBuf->size, &code, sizeof(code));
-                binBuf->size += sizeof(code);
-                memcpy(binBuf->buf + binBuf->size, &reg, sizeof(reg));
-                binBuf->size += sizeof(reg);
-            } else {
-                uint8_t code = 0b0000'0000;
-
-                code |= CommandIds[cmdPos] & CODE_ID_MASK;
-
-                memcpy(binBuf->buf + binBuf->size, &code, sizeof(code));
-                binBuf->size += sizeof(code);
-            }
-            break;
+    if (Strchr(line, ':') != nullptr) { //label:
+        if (Walkthrough == 1) {
+            Label lbl = {{line->str, (size_t)(Strchr(line, ':') - line->str)}, (jmpAdr_t)binBuf->size}; // size = смещение от начала
+            DArrayPushBack(labelArr, &lbl);
+        } else {
+            ;
         }
+    } else { // обычная команда
+        sscanf(line->str, "%s", holdCommand); //FIXME -  ограничить размер
 
-        cmdPos++;
+        #include "../../shared/include/commandSet.h"
+
+        /* else */ {};
     }
-
-    return state;
 }
 
+#undef DEF_CMD
 
+static void PutJmp(cmdKey_t cmdKey, jmpAdr_t jmpAdr, BinBuf* binBuf) {
+    if (binBuf->cap - binBuf->size < sizeof(cmdKey) + sizeof(jmpAdr)) {
+        binBuf->cap *= 2;
+        binBuf->buf = (byte_t*)realloc(binBuf->buf, binBuf->cap);
+    }
+
+    memcpy(binBuf->buf + binBuf->size, &cmdKey, sizeof(cmdKey));
+    binBuf->size += sizeof(cmdKey);
+
+    memcpy(binBuf->buf + binBuf->size, &jmpAdr, sizeof(jmpAdr));
+    binBuf->size += sizeof(jmpAdr);
+}
+
+static void PutNoArgs(cmdKey_t cmdKey, BinBuf* binBuf) {
+    if (binBuf->cap - binBuf->size < sizeof(cmdKey)) {
+        binBuf->cap *= 2;
+        binBuf->buf = (byte_t*)realloc(binBuf->buf, binBuf->cap);
+    }
+
+    memcpy(binBuf->buf + binBuf->size, &cmdKey, sizeof(cmdKey));
+    binBuf->size += sizeof(cmdKey);
+}
+
+static void PutImmed(cmdKey_t cmdKey, immed_t immed, BinBuf* binBuf) {
+    if (binBuf->cap - binBuf->size < sizeof(cmdKey) + sizeof(immed)) {
+        binBuf->cap *= 2;
+        binBuf->buf = (byte_t*)realloc(binBuf->buf, binBuf->cap);
+    }
+
+    memcpy(binBuf->buf + binBuf->size, &cmdKey, sizeof(cmdKey));
+    binBuf->size += sizeof(cmdKey);
+
+    memcpy(binBuf->buf + binBuf->size, &immed, sizeof(immed));
+    binBuf->size += sizeof(immed);
+}
+
+static void PutReg(cmdKey_t cmdKey, regId_t reg, BinBuf* binBuf) {
+    if (binBuf->cap - binBuf->size < sizeof(cmdKey) + sizeof(reg)) {
+        binBuf->cap *= 2;
+        binBuf->buf = (byte_t*)realloc(binBuf->buf, binBuf->cap);
+    }
+
+    memcpy(binBuf->buf + binBuf->size, &cmdKey, sizeof(cmdKey));
+    binBuf->size += sizeof(cmdKey);
+
+    memcpy(binBuf->buf + binBuf->size, &reg, sizeof(reg));
+    binBuf->size += sizeof(reg);
+}
+
+static void PutBoth(cmdKey_t cmdKey, regId_t reg, immed_t immed, BinBuf* binBuf) {
+    if (binBuf->cap - binBuf->size < sizeof(cmdKey) + sizeof(reg) + sizeof(immed)) {
+        binBuf->cap *= 2;
+        binBuf->buf = (byte_t*)realloc(binBuf->buf, binBuf->cap);
+    }
+
+    memcpy(binBuf->buf + binBuf->size, &cmdKey, sizeof(cmdKey));
+    binBuf->size += sizeof(cmdKey);
+
+    memcpy(binBuf->buf + binBuf->size, &reg, sizeof(reg));
+    binBuf->size += sizeof(reg);
+
+    memcpy(binBuf->buf + binBuf->size, &immed, sizeof(immed));
+    binBuf->size += sizeof(immed);
+}
+
+static Args GetArgs(char* str, char* holdReg, immed_t* holdImmed) {
+    char holdCommand[100] = "";
+
+    if (sscanf(str, "%s %lf", holdCommand, holdImmed) == 2) {
+        return Args::ONLY_IMMED;
+    } else if (sscanf(str, "%s %s %lf", holdCommand, holdReg, holdImmed) == 3) {
+        return Args::REG_AND_IMMED;
+    } else if (sscanf(str, "%s %s", holdCommand, holdReg) == 2) {
+        return Args::ONLY_REG;
+    } else {
+        return Args::NO_ARGS;
+    }
+}
+
+static void GetJmpAdr(char* str, char* holdJmpLbl, jmpAdr_t* jmpAdr, DArray* labelArr) {
+    char holdCommand[100] = "";
+
+    sscanf(str, "%s %s", holdCommand, holdJmpLbl);
+    String label = {holdJmpLbl, (size_t)(strchr(holdJmpLbl, '\0') - holdJmpLbl)};
+
+    Label* ptr = nullptr;
+
+    for (size_t i = 0; i < labelArr->size; i++) {
+        DArrayAt(labelArr, i, (void**)&ptr);
+        if (!Strcmp((String*)ptr, &label)) {
+            *jmpAdr = ptr->pos;
+        }
+    }
+}

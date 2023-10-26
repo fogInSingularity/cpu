@@ -8,89 +8,74 @@
 
 #include "../../lib/include/debug.h"
 #include "../../lib/include/fileUtils.h"
+#include "../../stack/include/stack.h"
 
+typedef uint8_t byte_t;
+typedef uint8_t cmdKey_t;
+typedef uint8_t regId_t;
 
+typedef double immed_t;
+typedef double jmpAdr_t;
+typedef double arg_t;
 
-static const size_t CommandCount = 12;
+typedef double reg_t;
 
-enum Commands: uint8_t {
-    HLT  = 0,
-    OUT  = 1,
-    PUSH = 2,
-    POP  = 3,
-    IN   = 4,
-    ADD  = 5,
-    SUB  = 6,
-    MULT = 7,
-    DIV  = 8,
-    SQRT = 9,
-    COS  = 10,
-    SIN  = 11,
+enum Args {
+  INIT_ARGS,
+  NO_ARGS,
+  ONLY_REG,
+  ONLY_IMMED,
+  REG_AND_IMMED,
+};
+
+enum Commands: cmdKey_t {
+#define DEF_CMD(name, num, aldArgs, ...) \
+  CMD_ ## name = num,
+
+#include "../../shared/include/commandSet.h"
+
+#undef DEF_CMD
+};
+
+enum Regs: regId_t {
+  RAX = 1,
+  RBX = 2,
+  RCX = 3,
+  RDX = 4,
 };
 
 __attribute_used__
-static const char* CommandNames[] = {
-    "HLT",
-    "out",
-    "push",
-    "pop",
-    "in",
-    "add",
-    "sub",
-    "mult",
-    "div",
-    "sqrt",
-    "cos",
-    "sin",
+static size_t RegIds[] = {
+  1, 2, 3, 4
 };
 
-static const int CommandIds[] = {
-    0,
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9,
-    10,
-    11,
+enum BitFlags: cmdKey_t {
+  CODE_ID_MASK   = 0b000'11111,
+  ARG_IMMED      = 0b001'00000,
+  ARG_REG        = 0b010'00000,
+  ARG_MEM_ACS    = 0b100'00000,
 };
 
-
-
-enum Regs {
-    RAX = 1,
-    RBX = 2,
-    RCX = 3,
-    RDX = 4,
-};
-
-static const size_t RegCount = 4;
-
-__attribute_used__
-static const char* RegNames[] = {
-    "rax",
-    "rbx",
-    "rcx",
-    "rdx",
-};
-
-static const int RegIds[] = {
-    1,
-    2,
-    3,
-    4,
-};
-
-
-
-enum BitFlags {
-    ARG_FORMAT_IMMED = 0b0001'0000,
-    ARG_FORMAT_REG   = 0b0010'0000,
-    CODE_ID_MASK     = 0b0000'1111,
-};
-
+// MLRI
+// ___
+namespace AllowedArgs {
+  enum Combos: uint64_t {
+    ____ = 1 << 0,
+    ___I = 1 << 1,
+    __R_ = 1 << 2,
+    __RI = 1 << 3,
+    _L__ = 1 << 4,
+    _L_I = 1 << 5,
+    _LR_ = 1 << 6,
+    _LRI = 1 << 7,
+    M___ = 1 << 8,
+    M__I = 1 << 9,
+    M_R_ = 1 << 10,
+    M_RI = 1 << 11,
+    ML__ = 1 << 12,
+    ML_I = 1 << 13,
+    MLR_ = 1 << 14,
+    MLRI = 1 << 15,
+  };
+}
 #endif // COMMANDS_H

@@ -1,7 +1,7 @@
 CC = g++
 EXE = asm
 
-DIRS = asmcode lib shared stack
+DIRS = asmcode lib shared stack darray
 
 SOURCES = $(foreach dir, $(DIRS), $(wildcard $(dir)/source/*.cpp))
 

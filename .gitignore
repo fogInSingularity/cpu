@@ -1,6 +1,5 @@
 .vscode
 vm
 asm
-logs
 trash
-cmdSet.txt
+logs.log

@@ -16,48 +16,48 @@ static void FileRead(BinData* data, FILE* file);
 // --------------------------------------
 
 void GetData(BinData* data, FILE* file) {
-    ASSERT(data != nullptr);
-    ASSERT(file != nullptr);
+  ASSERT(data != nullptr);
+  ASSERT(file != nullptr);
 
-    data->bufSz = FileSize(file);
+  data->bufSz = FileSize(file);
 
-    data->buf = (Byte*)calloc(data->bufSz, sizeof(char));
+  data->buf = (byte_t*)calloc(data->bufSz, sizeof(char));
 
-    FileRead(data, file);
+  FileRead(data, file);
 }
 
 void PutBuf(BinData* data, FILE* file) {
-    ASSERT(data != nullptr);
-    ASSERT(data != nullptr);
-    ASSERT(file != nullptr);
+  ASSERT(data != nullptr);
+  ASSERT(data != nullptr);
+  ASSERT(file != nullptr);
 
-    fwrite(data->buf, sizeof(Byte), data->bufSz, file);
+  fwrite(data->buf, sizeof(byte_t), data->bufSz, file);
 }
 
 void FreeData(BinData* data) {
-    ASSERT(data != nullptr);
+  ASSERT(data != nullptr);
 
-    free(data->buf);
-    data->buf = nullptr;
+  free(data->buf);
+  data->buf = nullptr;
 }
 
 // -------------------------------------
 
 static size_t FileSize(FILE* file) {
-    ASSERT(file != nullptr);
+  ASSERT(file != nullptr);
 
-    fseek(file, 0, SEEK_END);
+  fseek(file, 0, SEEK_END);
 
-    size_t size = (size_t)ftell(file);
+  size_t size = (size_t)ftell(file);
 
-    fseek(file, 0, SEEK_SET);
+  fseek(file, 0, SEEK_SET);
 
-    return size;
+  return size;
 }
 
 static void FileRead(BinData* data, FILE* file) {
-    ASSERT(data      != nullptr);
-    ASSERT(data->buf != nullptr);
+  ASSERT(data      != nullptr);
+  ASSERT(data->buf != nullptr);
 
-    fread(data->buf, sizeof(Byte), data->bufSz, file);
+  fread(data->buf, sizeof(byte_t), data->bufSz, file);
 }

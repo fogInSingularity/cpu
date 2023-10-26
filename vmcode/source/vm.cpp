@@ -5,358 +5,130 @@
 static FILE* InStream = stdin;
 static FILE* OutStream = stdout;
 
-struct Optn {
-    code_t code;
-    reg_t reg;
-    immed_t cnst;
-};
-
+static void VMDump(VM* vm, const char* file, size_t line, const char* func);
 static void ExecuteCode(VM* vm);
 
-static void ExecuteBoth(Cpu* cpu, Optn optn);
-static void ExecuteReg(Cpu* cpu, Optn optn);
-static void ExecuteCnst(Cpu* cpu, Optn optn);
-static void ExecuteNoArg(Cpu* cpu, Optn optn);
-
-static void CommandOut(Cpu* cpu, Optn optn);
-static void CommandHalt(Cpu* cpu, Optn optn);
-static void CommandIn(Cpu* cpu, Optn optn);
-static void CommandAdd(Cpu* cpu, Optn optn);
-static void CommandSub(Cpu* cpu, Optn optn);
-static void CommandMult(Cpu* cpu, Optn optn);
-static void CommandDiv(Cpu* cpu, Optn optn);
-static void CommandSqrt(Cpu* cpu, Optn optn);
-static void CommandCos(Cpu* cpu, Optn optn);
-static void CommandSin(Cpu* cpu, Optn optn);
-static void CommandPushCnst(Cpu* cpu, Optn optn);
-static void CommandPushReg(Cpu* cpu, Optn optn);
-// push reg immed //FIXME
-static void CommandPop(Cpu* cpu, Optn optn);
+#define VM_DUMP(vm) VMDump(vm, __FILE__, __LINE__, __func__);
 
 //----------------------------------------------
 
 void VMExecute(BinData* byteData, Stack* stk) {
-    ASSERT(byteData      != nullptr);
-    ASSERT(byteData->buf != nullptr);
-    ASSERT(stk           != nullptr);
+  ASSERT(byteData      != nullptr);
+  ASSERT(byteData->buf != nullptr);
+  ASSERT(stk           != nullptr);
 
-    VM vm = {};
-    vm.binData = byteData;
-    vm.pos = byteData->buf;
-    vm.cpu.regs = {0, 0, 0, 0};
-    vm.cpu.stk = stk;
+  VM vm = {};
+  vm.binData = byteData;
+  vm.pos = byteData->buf;
+  vm.cpu.regs = {0, 0, 0, 0};
+  vm.cpu.stk = stk;
 
-    while (*vm.pos != CommandIds[0]) {
-        ExecuteCode(&vm);
-    }
+  while (vm.pos <= byteData->buf + byteData->bufSz) {
+    VM_DUMP(&vm);
+    ExecuteCode(&vm);
+  }
 }
 
 //----------------------------------------------
 
+__attribute_used__
+static void VMDump(VM* vm, const char* file, size_t line, const char* func) {
+  fprintf(stderr, "#####################################################\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "#  VM called from  file %s(%lu) from function %s\n", file, line, func);
+  fprintf(stderr, "#  {\n");
+  fprintf(stderr, "#    binData\n");
+  fprintf(stderr, "#    {\n");
+  fprintf(stderr, "#      buf\n");
+  fprintf(stderr, "#      {\n");
+  fprintf(stderr, "#        ");
+  for (size_t i = 0; i < vm->binData->bufSz; i++) {
+    fprintf(stderr, "%.2X ", vm->binData->buf[i]);
+  }
+  fprintf(stderr, "\n");
+  fprintf(stderr, "#      }\n");
+  fprintf(stderr, "#      bufSz %lu\n", vm->binData->bufSz);
+  fprintf(stderr, "#    }\n");
+  fprintf(stderr, "#    pos %p\n", vm->pos);
+  fprintf(stderr, "#    cpu\n");
+  fprintf(stderr, "#    {\n");
+  fprintf(stderr, "#      regs\n");
+  fprintf(stderr, "#      {\n");
+  fprintf(stderr, "#        rax %lf\n", vm->cpu.regs.rax);
+  fprintf(stderr, "#        rbx %lf\n", vm->cpu.regs.rbx);
+  fprintf(stderr, "#        rcx %lf\n", vm->cpu.regs.rcx);
+  fprintf(stderr, "#        rdx %lf\n", vm->cpu.regs.rdx);
+  fprintf(stderr, "#      {\n");
+  fprintf(stderr, "#      stk {}\n");
+  fprintf(stderr, "#    }\n");
+  fprintf(stderr, "#  }\n");
+  fprintf(stderr, "\n");
+
+  STACK_DUMP(vm->cpu.stk, 0);
+
+  fprintf(stderr, "#####################################################\n");
+}
+
 static void ExecuteCode(VM* vm) {
-    ASSERT(vm->binData != nullptr);
-    ASSERT(vm->binData->buf != nullptr);
-    ASSERT(vm->pos != nullptr);
-    ASSERT(vm->cpu.stk != nullptr);
-    
-    code_t code = *vm->pos;
-    if ((code & 0b0011'0000) == 0b0011'0000) {        // регистр число
-        reg_t reg = *(reg_t*)(vm->pos + sizeof(code_t));
-        immed_t cnst = *(immed_t*)(vm->pos + sizeof(code_t) + sizeof(reg_t));
-
-        ExecuteBoth(&vm->cpu, {(code_t)(code & CODE_ID_MASK), reg, cnst});
-
-        vm->pos += sizeof(code_t) + sizeof(reg_t) + sizeof(immed_t);
-    } else if (code & 0b0010'0000) { // регистр
-        reg_t reg = *(reg_t*)(vm->pos+sizeof(code_t));
-
-        ExecuteReg(&vm->cpu, {(code_t)(code & 0b0000'1111), reg, 0});
-
-        vm->pos += sizeof(code_t) + sizeof(reg_t);
-    } else if (code & 0b0001'0000) { // число
-        immed_t cnst = *(immed_t*)(vm->pos + sizeof(code_t));
-
-        ExecuteCnst(&vm->cpu, {(code_t)(code & 0b0000'1111), 0, cnst});
-
-        vm->pos += sizeof(code_t) + sizeof(immed_t);
-    } else {                         // нет аргументов
-        ExecuteNoArg(&vm->cpu, {(code_t)(code & 0b0000'1111), 0, 0});
-
-        vm->pos += sizeof(code_t);
-    }
-}
-
-static void ExecuteBoth(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    switch (optn.code) {
-        case PUSH:
-//FIXME
-            break;
-        default:
-            ASSERT(0 && "!  unknown code with 2 args");
-            break;
-    }
-}
-
-static void ExecuteReg(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    switch (optn.code) {
-        case PUSH:
-            CommandPushReg(cpu, optn);
-            break;
-        case POP:
-            CommandPop(cpu, optn);
-            break;
-        default:
-            ASSERT(0 && "!  unknown code with reg");
-            break;
-    }
-}
-
-static void ExecuteCnst(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    switch (optn.code) {
-        case PUSH:
-            CommandPushCnst(cpu, optn);
-            break;
-        default:
-            ASSERT(0 && "!  unknown code with cnst");
-            break;
-    }
-}
-
-static void ExecuteNoArg(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    switch (optn.code) {
-        case HLT:
-            CommandHalt(cpu, optn);
-            break;
-        case OUT:
-            CommandOut(cpu, optn);
-            break;
-        case IN:
-            CommandIn(cpu, optn);
-            break;
-        case ADD:
-            CommandAdd(cpu, optn);
-            break;
-        case SUB:
-            CommandSub(cpu, optn);
-            break;
-        case MULT:
-            CommandMult(cpu, optn);
-            break;
-        case DIV:
-            CommandDiv(cpu, optn);
-            break;
-        case SQRT:
-            CommandSqrt(cpu, optn);
-            break;
-        case COS:
-            CommandCos(cpu, optn);
-            break;
-        case SIN:
-            CommandSin(cpu, optn);
-            break;
-        default:
-            ASSERT(0 && "!  unknown code with no args");
-            break;
-    }
-}
-
-static void CommandOut(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    USE_VAR(optn);
-
-    elem_t tmp = 0;
-    StackPop(cpu->stk, &tmp);
-
-    fprintf(OutStream, "Out: %d\n", tmp);
-}
-
-static void CommandHalt(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    USE_VAR(optn);
-
-    exit(0);
-}
-
-static void CommandIn(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    USE_VAR(optn);
-
-    elem_t tmp = 0;
-
-    fscanf(InStream, "%d", &tmp);
-    StackPush(cpu->stk, tmp);
-}
-
-static void CommandAdd(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    elem_t firstElem = 0;
-    elem_t secondElem = 0;
-
-    USE_VAR(optn);
-
-    StackPop(cpu->stk, &firstElem);
-    StackPop(cpu->stk, &secondElem);
-
-    StackPush(cpu->stk, firstElem + secondElem);
-}
-
-static void CommandSub(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    USE_VAR(optn);
-
-    elem_t firstElem = 0;
-    elem_t secondElem = 0;
-
-    StackPop(cpu->stk, &firstElem);
-    StackPop(cpu->stk, &secondElem);
-
-    StackPush(cpu->stk, secondElem - firstElem);
-}
-
-static void CommandMult(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    USE_VAR(optn);
-
-    elem_t firstElem = 0;
-    elem_t secondElem = 0;
-
-    StackPop(cpu->stk, &firstElem);
-    StackPop(cpu->stk, &secondElem);
-
-    StackPush(cpu->stk, secondElem * firstElem);
-}
-
-static void CommandDiv(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    USE_VAR(optn)
-
-    elem_t firstElem = 0;
-    elem_t secondElem = 0;
-
-    StackPop(cpu->stk, &firstElem);
-    StackPop(cpu->stk, &secondElem);
-
-    StackPush(cpu->stk, secondElem / firstElem);
-}
-
-static void CommandSqrt(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    USE_VAR(optn);
-
-    elem_t tmp = 0;
-
-    StackPop(cpu->stk, &tmp);
-
-    StackPush(cpu->stk, (elem_t)sqrt(tmp));
-}
-
-static void CommandCos(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    USE_VAR(optn);
-
-    elem_t tmp = 0;
-
-    StackPop(cpu->stk, &tmp);
-
-    StackPush(cpu->stk, (elem_t)cos(tmp));
-}
-
-static void CommandSin(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    USE_VAR(optn);
-
-    elem_t tmp = 0;
-
-    StackPop(cpu->stk, &tmp);
-
-    StackPush(cpu->stk, (elem_t)sin(tmp));
-}
-
-static void CommandPushCnst(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    USE_VAR(optn);
-
-    StackPush(cpu->stk, optn.cnst);
-}
-
-static void CommandPushReg(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    switch (optn.reg) {
-        case RAX:
-            StackPush(cpu->stk, cpu->regs.rax);
-            break;
-        case RBX:
-            StackPush(cpu->stk, cpu->regs.rbx);
-            break;
-        case RCX:
-            StackPush(cpu->stk, cpu->regs.rcx);
-            break;
-        case RDX:
-            StackPush(cpu->stk, cpu->regs.rdx);
-            break;
-        default:
-            ASSERT(0 && "!  Unknown regester");
-            break;
-    }
-}
-
-// push reg immed //FIXME
-
-static void CommandPop(Cpu* cpu, Optn optn) {
-    ASSERT(cpu != nullptr);
-    ASSERT(cpu->stk != nullptr);
-
-    switch (optn.reg) {
-        case RAX:
-            StackPop(cpu->stk, &cpu->regs.rax);
-            break;
-        case RBX:
-            StackPop(cpu->stk, &cpu->regs.rbx);
-            break;
-        case RCX:
-            StackPop(cpu->stk, &cpu->regs.rcx);
-            break;
-        case RDX:
-            StackPop(cpu->stk, &cpu->regs.rdx);
-            break;
-        default:
-            ASSERT(0 && "!  Unknown regester");
-            break;
-    }
+  ASSERT(vm->binData != nullptr);
+  ASSERT(vm->binData->buf != nullptr);
+  ASSERT(vm->pos != nullptr);
+  ASSERT(vm->cpu.stk != nullptr);
+
+  cmdKey_t cmdKey = *vm->pos;
+  regId_t reg = 0;
+  arg_t arg = 0;
+  Args tArgs = Args::INIT_ARGS;
+  // immed_t immed = 0;
+  // jmpAdr_t jmpAdr = 0;
+
+  USE_VAR(cmdKey);
+  USE_VAR(reg);
+  USE_VAR(arg);
+  USE_VAR(tArgs);
+  // USE_VAR(immed);
+  // USE_VAR(jmpAdr);
+
+  if (CHECK_BIT_FLAG(cmdKey, BitFlags::ARG_IMMED | BitFlags::ARG_REG)) {        // регистр число
+    reg = *(regId_t*)(vm->pos + sizeof(cmdKey_t));
+    arg = *(arg_t*)(vm->pos + sizeof(cmdKey_t) + sizeof(regId_t));
+
+    vm->pos += sizeof(cmdKey_t) + sizeof(regId_t) + sizeof(arg_t);
+
+    tArgs = Args::REG_AND_IMMED;
+  } else if (CHECK_BIT_FLAG(cmdKey, BitFlags::ARG_REG)) { // регистр
+    reg = *(regId_t*)(vm->pos+sizeof(cmdKey_t));
+
+    vm->pos += sizeof(cmdKey_t) + sizeof(regId_t);
+
+    tArgs = Args::ONLY_REG;
+  } else if (CHECK_BIT_FLAG(cmdKey, BitFlags::ARG_IMMED)) { // число
+    arg = *(immed_t*)(vm->pos + sizeof(cmdKey_t));
+    vm->pos += sizeof(cmdKey_t) + sizeof(arg_t);
+
+    tArgs = Args::ONLY_IMMED;
+  } else {                         // нет аргументов
+    vm->pos += sizeof(cmdKey_t);
+
+    tArgs = Args::NO_ARGS;
+  }
+
+  cmdKey = cmdKey & BitFlags::CODE_ID_MASK;
+
+/* start of def */
+#define DEF_CMD(name, num, isJmp, aldArgs, ...) \
+  case num: \
+    { __VA_ARGS__ } \
+    break;
+/* end of def */
+
+  switch (cmdKey) {// коды
+    #include "../../shared/include/commandSet.h"
+
+    default:
+      ASSERT(0 && "!  unknown command cmdKey");
+      break;
+  }
+
+#undef DEF_CMD
 }

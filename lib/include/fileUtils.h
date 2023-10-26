@@ -7,11 +7,11 @@
 
 /// @brief struct that holds file contents
 struct FileData {
-    char* buf;      ///< buffer that holds file string
-    size_t bufSize; ///< size of buffer in bytes
+  char* buf;      ///< buffer that holds file string
+  size_t bufSize; ///< size of buffer in bytes
 
-    String* text;   ///< string array
-    size_t nLines;  ///< number of strings
+  String* text;   ///< string array
+  size_t nLines;  ///< number of strings
 };
 
 

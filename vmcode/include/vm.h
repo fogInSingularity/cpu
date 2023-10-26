@@ -7,27 +7,23 @@
 #include "../../stack/include/stack.h"
 #include "../../shared/include/commands.h"
 
-typedef uint8_t code_t;
-typedef int reg_t;
-typedef int immed_t;
-
 struct Regesters {
-    reg_t rax;
-    reg_t rbx;
-    reg_t rcx;
-    reg_t rdx;
+  reg_t rax;
+  reg_t rbx;
+  reg_t rcx;
+  reg_t rdx;
 };
 
 struct Cpu {
-    Regesters regs;
-    Stack* stk;
+  Regesters regs;
+  Stack* stk;
 };
 
 struct VM {
-    BinData* binData;
-    Byte* pos;
+  BinData* binData;
+  byte_t* pos;
 
-    Cpu cpu;
+  Cpu cpu;
 };
 
 void VMExecute(BinData* byteData, Stack* stk);
