@@ -10,7 +10,7 @@
 static size_t Walkthrough = 0;
 static const size_t MinBinBufAlloc = 64;
 static const  size_t MultConst = 2;
-static const uint32_t Sign = 0x11FAADDE; // DEADFA11 stupid little endian
+static FILE* ErrorStream = stdout;
 
 static char* CntLen(String* str, char* move, String* iterOver);
 static double IsNumberPassed(String str);
@@ -41,7 +41,7 @@ AsmError Assembler::SetUp(int argc, char** argv) {
   }
 
   ErrorLine = nullptr;
-  signature = Sign;
+  signature = Signature;
 
   return AsmError::SUCCESS;
 }
@@ -72,45 +72,45 @@ void Assembler::ThrowError(AsmError error) {
       break;
 
     case AsmError::NOT_ENOUGH_FILES:
-      fputs(ERROR_M " too few files passed to program\n", stdout);
+      fputs(ERROR_M " too few files passed to program\n", ErrorStream);
       break;
     case AsmError::FILE_TO_READ_NOT_EXIST:
-      fputs(ERROR_M " cant open source file\n", stdout);
+      fputs(ERROR_M " cant open source file\n", ErrorStream);
       break;
     case AsmError::SETUP_CANT_ALLOC:
-      fputs(ERROR_M " unable to allocate memory for bytecode bufer\n", stdout);
+      fputs(ERROR_M " unable to allocate memory for bytecode bufer\n", ErrorStream);
       break;
     case AsmError::DARR_CTOR_CANT_ALLOC:
-      fputs(ERROR_M " unable to allocate memory for darray\n", stdout);
+      fputs(ERROR_M " unable to allocate memory for darray\n", ErrorStream);
       break;
     case AsmError::BINBUF_CANT_ALLOC:
-      fputs(ERROR_M " unable to allocate memory for binbuf\n", stdout);
+      fputs(ERROR_M " unable to allocate memory for binbuf\n", ErrorStream);
       break;
 
     case AsmError::STX_IDK_ARG:
-      fputs(ERROR_M " unknown argument passed:\n  ", stdout);
-      Fputs(ErrorLine, stdout);
-      fputc('\n', stdout);
+      fputs(ERROR_M " unknown argument passed:\n  ", ErrorStream);
+      Fputs(ErrorLine, ErrorStream);
+      fputc('\n', ErrorStream);
       break;
     case AsmError::STX_IDK_REG:
-      fputs(ERROR_M " unknown regester passed:\n  ", stdout);
-      Fputs(ErrorLine, stdout);
-      fputc('\n', stdout);
+      fputs(ERROR_M " unknown regester passed:\n  ", ErrorStream);
+      Fputs(ErrorLine, ErrorStream);
+      fputc('\n', ErrorStream);
       break;
     case AsmError::STX_IDK_CMD:
-      fputs(ERROR_M " unknown command passed:\n  ", stdout);
-      Fputs(ErrorLine, stdout);
-      fputc('\n', stdout);
+      fputs(ERROR_M " unknown command passed:\n  ", ErrorStream);
+      Fputs(ErrorLine, ErrorStream);
+      fputc('\n', ErrorStream);
       break;
     case AsmError::STX_IDK_LABEL:
-      fputs(ERROR_M " unknown label passed:\n  ", stdout);
-      Fputs(ErrorLine, stdout);
-      fputc('\n', stdout);
+      fputs(ERROR_M " unknown label passed:\n  ", ErrorStream);
+      Fputs(ErrorLine, ErrorStream);
+      fputc('\n', ErrorStream);
       break;
     case AsmError::STX_IDK_MEM_ACS:
-      fputs(ERROR_M " wrong memory access:\n  ", stdout);
-      Fputs(ErrorLine, stdout);
-      fputc('\n', stdout);
+      fputs(ERROR_M " wrong memory access:\n  ", ErrorStream);
+      Fputs(ErrorLine, ErrorStream);
+      fputc('\n', ErrorStream);
       break;
     default:
       ASSERT(0 && "UNKNOWN ERROR CODE");
@@ -166,7 +166,7 @@ AsmError Assembler::ParseAndStore(String* line) {
       Label lbl = {{line->str, (size_t)(colon - line->str)}, (jmpAdr_t)binbuf.size};
       labelArr.PushBack(&lbl);
     }
-  } else { //TODO command / functiont!!!!
+  } else {
     String cmd = {nullptr, 0};
     String arg = {nullptr, 0};
 

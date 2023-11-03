@@ -13,7 +13,7 @@
 #include "hash.h"
 
 #ifdef _DEBUG
-  #define ON_DEBUG(...) __VA_VARGS__
+  #define ON_DEBUG(...) { __VA_ARGS__ }
 #else
   #define ON_DEBUG(...)
 #endif // _DEBUG
@@ -25,7 +25,7 @@
 #endif // _CANARY_PROT
 
 #ifdef _HASH_PROT
-  #define ON_HASH(...) __VA_VARGS__
+  #define ON_HASH(...) __VA_ARGS__
 #else
   #define ON_HASH(...)
 #endif // _HASH_PROT

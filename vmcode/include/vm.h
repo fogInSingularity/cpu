@@ -11,33 +11,34 @@ typedef double memory_t;
 
 enum class VMError {
   SUCCESS,
+  HLT,
   NOT_ENOUGH_FILES,
   FILE_TO_READ_NOT_EXIST,
+  SETUP_STACK_CANT_INIT,
+  UNKNOWN_SIGNATURE
 };
 
 struct Cpu {
   reg_t regs[4];
   memory_t memory[100];
 
-  Stack* stk;
+  Stack stk;
 };
 
 struct VM {
  public:
-  BinData* binData;
+  BinData binData;
   byte_t* ip;
 
   Cpu cpu;
 
   VMError SetUp(int argc, char** argv);
-  void CleanUp(int argc, char** argv);
+  void CleanUp();
   void ThrowError(VMError error);
 
   VMError Execute();
  private:
-
+  VMError ExecuteCmd();
 };
-
-// void VMExecute(BinData* byteData, Stack* stk);
 
 #endif

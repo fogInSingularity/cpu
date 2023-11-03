@@ -1,5 +1,5 @@
 DEF_CMD(HLT, 0, false, AllowedArgs::____, {
-  exit(0);
+  return VMError::HLT;
 })
 
 DEF_CMD(out, 1, false, AllowedArgs::____, {

@@ -3,3 +3,4 @@ vm
 asm
 trash
 logs.log
+gmon.out

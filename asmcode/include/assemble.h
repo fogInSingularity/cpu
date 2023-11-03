@@ -13,8 +13,6 @@
 #include "../../lib/include/color.h"
 #include "../../stack/include/stack.h"
 
-#define ERROR_M RED BOLD "error:" RESET
-
 struct Label {
   String name;
   jmpAdr_t pos;
