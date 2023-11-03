@@ -7,31 +7,45 @@
 #include <memory.h>
 #include <stdio.h>
 
-static const size_t DArrayStandartAllocSize = 8;
-static const size_t DArrayMultiplyConst = 2;
-
-struct DArray {
-  void* array;
-
-  size_t size;
-  size_t cap;
-  size_t elemSize;
-};
-
-void DArrayCtor(DArray* dArr, size_t elemSize, size_t initCap = DArrayStandartAllocSize);
-void DArrayDtor(DArray* dArr);
-
-void DArrayPushBack(DArray* dArr, void* elem);
-void DArrayPopBack(DArray* dArr, void* elem);
-
-void DArraySetAt(DArray* dArr, void* elem, size_t index);
-void DArrayGetAt(DArray* dArr, void* elem, size_t index);
-
-void DArrayAt(DArray* dArr, size_t index, void** retPtr);
+#include "../../lib/include/debug.h"
 
 typedef void Dump_t(void* elem);
 
-#define DARRAY_DUMP(dArr, funcRef) DArrayDump(dArr,funcRef, __FILE__, __LINE__, __func__);
-void DArrayDump(DArray* dArr, Dump_t* DumpElemFunc, const char* file, size_t line, const char* func);
+static const size_t DArrayStandartAllocSize = 8;
+static const size_t DArrayMultiplyConst = 2;
+
+enum DArrayError {
+  SUCCESS,
+  CTOR_CANT_ALLOC,
+  RECLC_CANT_ALLOC,
+  EMPTY_DARR_POP,
+  SETAT_OUT_OF_BOUNDS,
+  GETAT_OUT_OF_BOUNDS,
+  AT_OUT_OF_BOUNDS,
+};
+
+struct DArray {
+ public:
+  void* array;
+  size_t size;
+  size_t cap;
+  size_t elemSize;
+
+  DArrayError Ctor(size_t elemSize, size_t initCap = DArrayStandartAllocSize);
+  DArrayError Dtor();
+
+  DArrayError PushBack(void* elem);
+  DArrayError PopBack(void* elem);
+  DArrayError SetAt(void* elem, size_t index);
+  DArrayError GetAt(void* elem, size_t index);
+  DArrayError At(void** retPtr, size_t index);
+  void Dump(Dump_t* DumpElemFunc, const char* file, size_t line, const char* func);
+ private:
+  DArrayError ResizeUp_();
+  DArrayError ResizeDown_();
+  DArrayError Recalloc_();
+};
+
+#define DARRAY_DUMP(dArr, funcRef) dArr->Dump(funcRef, __FILE__, __LINE__, __func__);
 
 #endif

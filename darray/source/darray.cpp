@@ -1,56 +1,89 @@
 #include "../include/darray.h"
 
-//-----------------------------------------------------------------------------
+//public-----------------------------------------------------------------------
 
-static void DArrayResizeUp(DArray* dArr);
-static void DArrayResizeDown(DArray* dArr);
+DArrayError DArray::Ctor(size_t initElemSize, size_t initCap) {
+  elemSize = initElemSize;
+  size = 0;
+  cap = (initCap < DArrayStandartAllocSize) ? DArrayStandartAllocSize : initCap;
 
-static void DArrayRecalloc(DArray* dArr);
+  array = calloc(cap, elemSize);
+  if (array == nullptr) {
+    return DArrayError::CTOR_CANT_ALLOC;
+  }
 
-//-----------------------------------------------------------------------------
-
-void DArrayCtor(DArray* dArr, size_t elemSize, size_t initCap) {
-  dArr->elemSize = elemSize;
-  dArr->size = 0;
-  dArr->cap = (initCap < DArrayStandartAllocSize) ? DArrayStandartAllocSize : initCap;
-
-  dArr->array = calloc(dArr->cap, dArr->elemSize);
+  return DArrayError::SUCCESS;
 }
 
-void DArrayDtor(DArray* dArr) {
-  free(dArr->array);
-  dArr->array = nullptr;
+DArrayError DArray::Dtor() {
+  free(array);
+  array = nullptr;
 
-  dArr->cap = 0;
-  dArr->size = 0;
-  dArr->elemSize = 0;
+  cap = 0;
+  size = 0;
+  elemSize = 0;
+
+  return DArrayError::SUCCESS;
 }
 
-void DArrayPushBack(DArray* dArr, void* elem) {
-  DArrayResizeUp(dArr);
+DArrayError DArray::PushBack(void* elem) {
+  DArrayError error = ResizeUp_();
+  if (error != DArrayError::SUCCESS) {
+    return error;
+  }
 
-  memcpy((char*)dArr->array + (dArr->size++)*dArr->elemSize, elem, dArr->elemSize);
+  memcpy((char*)array + (size++)*elemSize, elem, elemSize);
+
+  return error;
 }
 
-void DArrayPopBack(DArray* dArr, void* elem) {
-  DArrayResizeDown(dArr);
+DArrayError DArray::PopBack(void* elem) {
+  DArrayError error = ResizeDown_();
 
-  memcpy(elem, (char*)dArr->array + (--dArr->size)*dArr->elemSize, dArr->elemSize);
+  if (size <= 0) {
+    return DArrayError::EMPTY_DARR_POP;
+  }
+
+  if (error != DArrayError::SUCCESS) {
+    return error;
+  }
+
+  memcpy(elem, (char*)array + (--size)*elemSize, elemSize);
+
+  return error;
 }
 
-void DArraySetAt(DArray* dArr, void* elem, size_t index) {
-  memcpy((char*)dArr->array + index*dArr->elemSize, elem, dArr->elemSize);
+DArrayError DArray::SetAt(void* elem, size_t index) {
+  if (index > size - 1) {
+    return DArrayError::SETAT_OUT_OF_BOUNDS;
+  }
+
+  memcpy((char*)array + index*elemSize, elem, elemSize);
+
+  return DArrayError::SUCCESS;
 }
 
-void DArrayGetAt(DArray* dArr, void* elem, size_t index) {
-  memcpy(elem, (char*)dArr->array + index*dArr->elemSize, dArr->elemSize);
+DArrayError DArray::GetAt(void* elem, size_t index) {
+  if (index > size - 1) {
+    return DArrayError::GETAT_OUT_OF_BOUNDS;
+  }
+
+  memcpy(elem, (char*)array + index*elemSize, elemSize);
+
+  return DArrayError::SUCCESS;
 }
 
-void DArrayAt(DArray* dArr, size_t index, void** retPtr) {
-  *retPtr = (char*)dArr->array + index*dArr->elemSize;
+DArrayError DArray::At(void** retPtr, size_t index) {
+  if (index > size - 1) {
+    return DArrayError::AT_OUT_OF_BOUNDS;
+  }
+
+  *retPtr = (char*)array + index*elemSize;
+
+  return DArrayError::SUCCESS;
 }
 
-void DArrayDump(DArray* dArr, Dump_t* DumpElemFunc, const char* file, size_t line, const char* func) {
+void DArray::Dump(Dump_t* DumpElemFunc, const char* file, size_t line, const char* func) {
   fprintf(stderr, "#####################################################\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "#  dynamic array called from file %s(%lu) from function %s\n", file, line, func);
@@ -58,47 +91,58 @@ void DArrayDump(DArray* dArr, Dump_t* DumpElemFunc, const char* file, size_t lin
   fprintf(stderr, "#    array\n");
   fprintf(stderr, "#    {\n");
   // pirnt array
-  for (size_t i = 0; i < dArr->size; i++) {
+  for (size_t i = 0; i < size; i++) {
   fprintf(stderr, "#      *[%lu] ", i);
-    DumpElemFunc((char*)dArr->array + i*dArr->elemSize);
+    DumpElemFunc((char*)array + i*elemSize);
     fprintf(stderr, "\n");
   }
 
-  for (size_t i = dArr->size; i < dArr->cap; i++) {
+  for (size_t i = size; i < cap; i++) {
   fprintf(stderr, "#       [%lu] ", i);
-    DumpElemFunc((char*)dArr->array + i*dArr->elemSize);
+    DumpElemFunc((char*)array + i*elemSize);
     fprintf(stderr, "\n");
   }
   //
   fprintf(stderr, "#    }\n");
-  fprintf(stderr, "#    size %lu\n", dArr->size);
-  fprintf(stderr, "#    cap %lu\n", dArr->cap);
-  fprintf(stderr, "#    elemSize %lu\n", dArr->elemSize);
+  fprintf(stderr, "#    size %lu\n", size);
+  fprintf(stderr, "#    cap %lu\n", cap);
+  fprintf(stderr, "#    elemSize %lu\n", elemSize);
   fprintf(stderr, "#  }\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "#####################################################\n");
 }
 
-//-----------------------------------------------------------------------------
+//private----------------------------------------------------------------------
 
-static void DArrayResizeUp(DArray* dArr) {
-  if (dArr->cap <= dArr->size) {
-    dArr->cap *= DArrayMultiplyConst;
+DArrayError DArray::ResizeUp_() {
+  if (cap <= size) {
+    cap *= DArrayMultiplyConst;
 
-    DArrayRecalloc(dArr);
+    return Recalloc_();
   }
+
+  return DArrayError::SUCCESS;
 }
 
-static void DArrayResizeDown(DArray* dArr) {
-  if (dArr->size * DArrayMultiplyConst * DArrayMultiplyConst <= dArr->cap) {
-    dArr->cap = (dArr->cap > DArrayMultiplyConst) ? (dArr->cap / DArrayMultiplyConst) : DArrayMultiplyConst;
+DArrayError DArray::ResizeDown_() {
+  if (size * DArrayMultiplyConst * DArrayMultiplyConst <= cap) {
+    cap = (cap > DArrayMultiplyConst) ? (cap / DArrayMultiplyConst) : DArrayMultiplyConst;
 
-    DArrayRecalloc(dArr);
+    return Recalloc_();
   }
+
+  return DArrayError::SUCCESS;
 }
 
-static void DArrayRecalloc(DArray* dArr) {
-  dArr->array = realloc(dArr->array, dArr->cap*dArr->elemSize);
+DArrayError DArray::Recalloc_() {
+  void* hold = array;
+  array = realloc(array, cap*elemSize);
+  if (array == nullptr) {
+    array = hold;
+    return DArrayError::RECLC_CANT_ALLOC;
+  }
 
-  memset((char*)dArr->array + dArr->size*dArr->elemSize, 0, (dArr->cap - dArr->size)*dArr->elemSize);
+  memset((char*)array + size*elemSize, 0, (cap - size)*elemSize);
+
+  return DArrayError::SUCCESS;
 }

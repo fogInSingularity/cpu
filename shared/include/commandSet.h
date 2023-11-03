@@ -9,9 +9,7 @@ DEF_CMD(out, 1, false, AllowedArgs::____, {
   StackPush(vm->cpu.stk, tmp);
 })
 
-DEF_CMD(push, 2, false,
-  AllowedArgs::___I | AllowedArgs::__R_ | AllowedArgs::__RI |
-  AllowedArgs::M__I | AllowedArgs::M_R_ | AllowedArgs::M_RI, {
+DEF_CMD(push, 2, false, AllowedArgs::___I | AllowedArgs::__R_ | AllowedArgs::__RI | AllowedArgs::M__I | AllowedArgs::M_R_ | AllowedArgs::M_RI, {
   switch (tArgs) {
     case REG_AND_IMMED:
       switch (reg) {
@@ -158,7 +156,7 @@ DEF_CMD(sin, 11, false, AllowedArgs::____, {
 })
 
 DEF_CMD(jmp, 12, true, AllowedArgs::_L__, {
-  vm->pos = vm->binData->buf + (size_t)arg;
+  vm->ip = vm->binData->buf + (size_t)arg;
 })
 
 DEF_CMD(ja, 13, true, AllowedArgs::_L__, {
@@ -167,7 +165,7 @@ DEF_CMD(ja, 13, true, AllowedArgs::_L__, {
   StackPop(vm->cpu.stk, &tmp1);
   StackPop(vm->cpu.stk, &tmp2);
   if (tmp1 > tmp2) {
-    vm->pos = vm->binData->buf + (size_t)arg;
+    vm->ip = vm->binData->buf + (size_t)arg;
   }
 
   StackPush(vm->cpu.stk, tmp2);
@@ -180,7 +178,7 @@ DEF_CMD(jae, 14, true, AllowedArgs::_L__, {
   StackPop(vm->cpu.stk, &tmp1);
   StackPop(vm->cpu.stk, &tmp2);
   if (tmp1 >= tmp2) {
-    vm->pos = vm->binData->buf + (size_t)arg;
+    vm->ip = vm->binData->buf + (size_t)arg;
   }
 
   StackPush(vm->cpu.stk, tmp2);
@@ -193,48 +191,56 @@ DEF_CMD(jb, 15, true, AllowedArgs::_L__, {
   StackPop(vm->cpu.stk, &tmp1);
   StackPop(vm->cpu.stk, &tmp2);
   if (tmp1 < tmp2) {
-    vm->pos = vm->binData->buf + (size_t)arg;
+    vm->ip = vm->binData->buf + (size_t)arg;
   }
 
   StackPush(vm->cpu.stk, tmp2);
   StackPush(vm->cpu.stk, tmp1);
 })
 
-DEF_CMD(jbe, true, AllowedArgs::_L__, {
+DEF_CMD(jbe, 16, true, AllowedArgs::_L__, {
   elem_t tmp1 = 0;
   elem_t tmp2 = 0;
   StackPop(vm->cpu.stk, &tmp1);
   StackPop(vm->cpu.stk, &tmp2);
   if (tmp1 <= tmp2) {
-    vm->pos = vm->binData->buf + (size_t)arg;
+    vm->ip = vm->binData->buf + (size_t)arg;
   }
 
   StackPush(vm->cpu.stk, tmp2);
   StackPush(vm->cpu.stk, tmp1);
 })
 
-DEF_CMD(je, true, AllowedArgs::_L__, {
+DEF_CMD(je, 17, true, AllowedArgs::_L__, {
   elem_t tmp1 = 0;
   elem_t tmp2 = 0;
   StackPop(vm->cpu.stk, &tmp1);
   StackPop(vm->cpu.stk, &tmp2);
   if (tmp1 == tmp2) {
-    vm->pos = vm->binData->buf + (size_t)arg;
+    vm->ip = vm->binData->buf + (size_t)arg;
   }
 
   StackPush(vm->cpu.stk, tmp2);
   StackPush(vm->cpu.stk, tmp1);
 })
 
-DEF_CMD(jne, true, AllowedArgs::_L__, {
+DEF_CMD(jne, 18, true, AllowedArgs::_L__, {
   elem_t tmp1 = 0;
   elem_t tmp2 = 0;
   StackPop(vm->cpu.stk, &tmp1);
   StackPop(vm->cpu.stk, &tmp2);
   if (tmp1 != tmp2) {
-    vm->pos = vm->binData->buf + (size_t)arg;
+    vm->ip = vm->binData->buf + (size_t)arg;
   }
 
   StackPush(vm->cpu.stk, tmp2);
   StackPush(vm->cpu.stk, tmp1);
+})
+
+DEF_CMD(call, 19, true, AllowedArgs::_L__, {
+
+})
+
+DEF_CMD(ret, 20, false, AllowedArgs::____, {
+
 })

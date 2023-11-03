@@ -10,7 +10,10 @@
 #include "color.h"
 
 #define USE_VAR(v) (void)(v);
+
 #define PRINT_LONG(n) fprintf(stderr, ">>> %ld <<<\n", n);
+#define PRINT_ULONG(n) fprintf(stderr, ">>> %lu <<<\n", n);
+#define PRINT_ULX(n) fprintf(stderr, ">>> %lX <<<\n", n);
 #define PRINT_INT(n) fprintf(stderr, ">>> %d <<<\n", n);
 #define PRINT_DOUBLE(n) fprintf(stderr, ">>> %lf <<<\n", n);
 
@@ -29,9 +32,10 @@
 
 #define ASSERT(expr) \
   if ((expr) == 0) { \
-    printf(BOLD RED "# ERROR:\n"); \
-    printf("#   file: %s\n", __FILE__); \
-    printf("#   func: %s\n" RESET, __PRETTY_FUNCTION__); \
+    fprintf(stderr, BOLD RED "#  ERROR:\n"); \
+    fprintf(stderr, "#    file: %s\n", __FILE__); \
+    fprintf(stderr, "#    line %d\n", __LINE__); \
+    fprintf(stderr, "#    func: %s\n" RESET, __PRETTY_FUNCTION__); \
     abort(); \
     }
 #else

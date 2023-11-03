@@ -11,25 +11,17 @@
 #include "../../darray/include/darray.h"
 
 int main(int argc, char** argv) {
-  if (argc < 3) {
-    fprintf(stderr, "!  not enough files\n");
-    return 0;
+  AsmError error = AsmError::SUCCESS;
+  Assembler assembler = {};
+
+  error = assembler.SetUp(argc, argv);
+
+  if (error == AsmError::SUCCESS) {
+    error = assembler.Assemble();
   }
 
-  FILE* scriptFile = fopen(argv[1], "r");
-  CHECK_FILE(scriptFile, argv[1], 0);
-
-  FILE* byteCodeFile = fopen(argv[2], "wb");
-  CHECK_FILE(byteCodeFile, argv[2], 0); //NOTE - creates file insted failing
-
-  FileData scriptData = {};
-  GetData(&scriptData, scriptFile);
-  fclose(scriptFile);
-
-  Assemble(&scriptData, byteCodeFile);
-
-  fclose(byteCodeFile);
-  FreeData(&scriptData);
+  assembler.ThrowError(error);
+  assembler.CleanUp(argc, argv);
 
   return 0;
 }

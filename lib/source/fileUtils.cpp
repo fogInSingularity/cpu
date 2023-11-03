@@ -87,7 +87,7 @@ static void FileRead(char* buf, size_t fileSize, FILE* fileToRead) {
   ASSERT(fileToRead != nullptr);
 
   fread(buf, sizeof(char), fileSize, fileToRead);
-  *(buf + fileSize - 2) = '\n';
+  // *(buf + fileSize - 2) = '\n';
   *(buf + fileSize - 1) = '\0';
 }
 
