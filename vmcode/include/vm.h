@@ -6,8 +6,12 @@
 #include "../../lib/include/binFileUtils.h"
 #include "../../stack/include/stack.h"
 #include "../../shared/include/commands.h"
+#include "dsl.h"
 
 typedef double memory_t;
+
+static const size_t NOfRegs = 4;
+static const size_t MemorySize = 100;
 
 enum class VMError {
   SUCCESS,
@@ -15,12 +19,14 @@ enum class VMError {
   NOT_ENOUGH_FILES,
   FILE_TO_READ_NOT_EXIST,
   SETUP_STACK_CANT_INIT,
-  UNKNOWN_SIGNATURE
+  UNKNOWN_SIGNATURE,
+  STACK_CANT_POP,
+  STACK_CANT_PUSH,
 };
 
 struct Cpu {
-  reg_t regs[4];
-  memory_t memory[100];
+  reg_t regs[NOfRegs];
+  memory_t memory[MemorySize];
 
   Stack stk;
 };
@@ -32,13 +38,14 @@ struct VM {
 
   Cpu cpu;
 
-  VMError SetUp(int argc, char** argv);
-  void CleanUp();
+  VMError Ctor(int argc, char** argv);
+  void Dtor();
   void ThrowError(VMError error);
+  void Dump(const char* file,const size_t line, const char* func);
 
   VMError Execute();
  private:
   VMError ExecuteCmd();
 };
 
-#endif
+#endif // VM_H

@@ -14,14 +14,14 @@ int main(int argc, char** argv) {
   AsmError error = AsmError::SUCCESS;
   Assembler assembler = {};
 
-  error = assembler.SetUp(argc, argv);
+  error = assembler.Ctor(argc, argv);
 
   if (error == AsmError::SUCCESS) {
     error = assembler.Assemble();
   }
 
   assembler.ThrowError(error);
-  assembler.CleanUp(argc, argv);
+  assembler.Dtor(argc, argv);
 
   return 0;
 }

@@ -11,6 +11,7 @@
 #include "../../lib/include/fileUtils.h"
 #include "../../shared/include/commands.h"
 #include "../../lib/include/color.h"
+#include "../../lib/include/utils.h"
 #include "../../stack/include/stack.h"
 
 struct Label {
@@ -23,6 +24,16 @@ struct BinBuf {
   size_t size;
   size_t cap;
 };
+
+namespace PassedArg {
+  enum PassArg: uint8_t {
+    // MLRI
+    IMMED_PASSED  = 0b0001,
+    REG_PASSED    = 0b0010,
+    LABEL_PASSED  = 0b0100,
+    MEMORY_PASSED = 0b1000,
+  };
+}
 
 enum class AsmError {
   SUCCESS,
@@ -46,25 +57,26 @@ struct Assembler {
   DArray labelArr;
   FileData scriptFile;
 
-  AsmError SetUp(int argc, char** argv);
-  void CleanUp(int argc, char** argv);
+  AsmError Ctor(int argc, char** argv);
+  void Dtor(int argc, char** argv);
   void ThrowError(AsmError error);
 
   AsmError Assemble();
  private:
   String* ErrorLine;
+  size_t ErrorLineNumber;
   uint32_t signature;
 
+  AsmError Walkthrough();
   AsmError ParseAndStore(String* line);
-  AsmError ParseJmp(String* arg, cmdKey_t num, uint64_t aldArgs);
+  AsmError ParseJmp(String* arg, cmdKey_t cmdIdId, uint64_t allowedArgs);
   AsmError StoreJmp(cmdKey_t cmdKey, jmpAdr_t jmpAdr);
-  AsmError ParseCmd(String* strArg, cmdKey_t num, uint64_t aldArgs);
-  AsmError ParseCmdNoArgs(cmdKey_t num, uint64_t aldArgs);
-  AsmError ParseCmdWithArgs(String* arg, cmdKey_t num, uint64_t aldArgs);
+  AsmError ParseCmd(String* strArg, cmdKey_t cmdIdId, uint64_t allowedArgs);
+  AsmError ParseCmdNoArgs(cmdKey_t cmdIdId, uint64_t allowedArgs);
+  AsmError ParseCmdWithArgs(String* arg, cmdKey_t cmdIdId, uint64_t allowedArgs);
   AsmError StoreCmd(cmdKey_t cmdKey, regId_t regId, immed_t immed);
   AsmError StoreVoid(void* elem, size_t elemSize);
+  AsmError Recalloc();
 };
-
-// void DumpLabel(void* label);
 
 #endif // ASSEMBLE_H

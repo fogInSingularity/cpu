@@ -4,3 +4,6 @@ asm
 trash
 logs.log
 gmon.out
+bytecode.bin
+MakeBin
+todo

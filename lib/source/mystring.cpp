@@ -21,8 +21,7 @@ int Strcmp(String* strA, String* strB) {
   ASSERT(strA->str != nullptr);
   ASSERT(strB != nullptr);
   ASSERT(strB->str != nullptr);
-
-  return strncmp(strA->str, strB->str, (strA->len < strB->len) ? strA->len : strB->len);
+  return strncmp(strA->str, strB->str, MIN(strA->len, strB->len));
 }
 
 ssize_t Fputs(String* str, FILE* file) {

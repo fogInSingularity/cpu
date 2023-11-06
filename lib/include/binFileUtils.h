@@ -29,7 +29,7 @@ void GetData(BinData* data, FILE* file);
  * @param data FileData struct
  * @param file file to put buffer to
 */
-void PutBuf(BinData* data, FILE* file);
+void PutData(BinData* data, FILE* file);
 
 
 /**

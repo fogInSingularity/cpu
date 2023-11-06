@@ -9,24 +9,14 @@
 
 #include "color.h"
 
-#define USE_VAR(v) (void)(v);
-
-#define PRINT_LONG(n) fprintf(stderr, ">>> %ld <<<\n", n);
-#define PRINT_ULONG(n) fprintf(stderr, ">>> %lu <<<\n", n);
-#define PRINT_ULX(n) fprintf(stderr, ">>> %lX <<<\n", n);
-#define PRINT_INT(n) fprintf(stderr, ">>> %d <<<\n", n);
+#ifdef _DEBUG
+#define PRINT_BYTE(n)   fprintf(stderr, ">>> %x <<<\n", n);
+#define PRINT_LONG(n)   fprintf(stderr, ">>> %ld <<<\n", n);
+#define PRINT_ULONG(n)  fprintf(stderr, ">>> %lu <<<\n", n);
+#define PRINT_ULX(n)    fprintf(stderr, ">>> %lX <<<\n", n);
+#define PRINT_INT(n)    fprintf(stderr, ">>> %d <<<\n", n);
 #define PRINT_DOUBLE(n) fprintf(stderr, ">>> %lf <<<\n", n);
 
-#define CHECK_FILE(file, fileName, retVl) \
-  if (file == nullptr) { \
-    fprintf(stderr, RED BOLD "!  CANT OPEN FILE: %s\n" RESET, fileName); \
-    fprintf(stderr, RED BOLD "!    %s(%d) %s\n" RESET, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
-    return retVl; \
-  }
-
-#define CHECK_BIT_FLAG(var, flag) ((var & (flag)) == (flag))
-
-#ifdef _DEBUG
 #define $        fprintf(stderr, BOLD MAGENTA ">>> %s(%d) %s\n"  RESET,__FILE__, __LINE__, __PRETTY_FUNCTION__);
 #define $$(...) {fprintf(BOLD MAGENTA stderr, ">>> %s\n" RESET, #__VA_ARGS__); __VA_ARGS__;}
 
@@ -38,7 +28,13 @@
     fprintf(stderr, "#    func: %s\n" RESET, __PRETTY_FUNCTION__); \
     abort(); \
     }
-#else
+#else // ifndef _DEBUG
+#define PRINT_LONG(n) ;
+#define PRINT_ULONG(n) ;
+#define PRINT_ULX(n) ;
+#define PRINT_INT(n) ;
+#define PRINT_DOUBLE(n) ;
+
 #define $ ;
 #define $$(...) {__VA_ARGS__;}
 

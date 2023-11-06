@@ -5,6 +5,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "utils.h"
 #include "debug.h"
 
 /// @brief string type

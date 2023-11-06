@@ -6,7 +6,7 @@ DIRS = asmcode lib shared stack darray
 SOURCES = $(foreach dir, $(DIRS), $(wildcard $(dir)/source/*.cpp))
 
 DEFINES = -D_DEBUG
-FLAGS = -O0 -std=c++17 -Wall -Wextra -Weffc++ -Wno-inline 	-Waggressive-loop-optimizations \
+FLAGS = -O0 -std=c++17 -Wall -Wextra -Weffc++ -Wno-inline -Waggressive-loop-optimizations \
 -Wc++14-compat -Wuseless-cast -Wmissing-declarations -Wcast-align -Wcast-qual \
 -Wchar-subscripts -Wconditionally-supported -Wconversion -Wctor-dtor-privacy \
 -Wempty-body -Wfloat-equal -Wformat-nonliteral -Wformat-security \
@@ -20,11 +20,12 @@ FLAGS = -O0 -std=c++17 -Wall -Wextra -Weffc++ -Wno-inline 	-Waggressive-loop-opt
 -Wno-missing-field-initializers -Wno-narrowing -Wno-old-style-cast \
 -Wno-varargs -Wstack-protector -fcheck-new -fsized-deallocation \
 -fstack-protector -fstrict-overflow -flto-odr-type-merging \
--fno-omit-frame-pointer -Wlarger-than=8192 -Wstack-usage=8192 \
+-fno-omit-frame-pointer -Wstack-usage=8192 \
 -fsanitize=address,bool,bounds,enum,float-cast-overflow,$\
 float-divide-by-zero,integer-divide-by-zero,leak,nonnull-attribute,null,$\
 object-size,return,returns-nonnull-attribute,shift,signed-integer-overflow,$\
 undefined,unreachable,vla-bound,vptr
+# -Wlarger-than=8192 
 
 all:
 	@$(CC) $(SOURCES) $(FLAGS) $(DEFINES) -o $(EXE)

@@ -47,7 +47,7 @@ StackError StackCtor(Stack* stk, ssize_t initCap) {
   FillBytes(AdrDataElem(stk, 0), &Nullifier, (size_t)stk->capacity, sizeof(elem_t));
 
   if (stk->data == nullptr) {
-    return error |= StackState::ErrorCtor;
+    return error | StackState::ErrorCtor;
   }
 
 #ifdef _CANARY_PROT
@@ -85,7 +85,7 @@ StackError StackOk(Stack* stk) {
   StackError error = 0;
 
   if (stk == nullptr) {
-    return error |= StackState::ErrorStkNull;
+    return error | StackState::ErrorStkNull;
   } else {
 #ifdef _CANARY_PROT
     if (stk->lcanary != Canary) {
@@ -96,11 +96,11 @@ StackError StackOk(Stack* stk) {
 #endif // _CANARY_PROT
 
     if (stk->size < 0) {
-      return error |= StackState::ErrorStkSizeNeg;
+      return error | StackState::ErrorStkSizeNeg;
     }
 
     if (stk->capacity < 0) {
-      return error |= StackState::ErrorStkCapNeg;
+      return error | StackState::ErrorStkCapNeg;
     }
 
 #ifdef _HASH_PROT
@@ -115,7 +115,7 @@ StackError StackOk(Stack* stk) {
 #endif // _HASH_PROT
 
     if (stk->data == nullptr) {
-      return error |= StackState::ErrorDataNull;
+      return error | StackState::ErrorDataNull;
     } else {
       error |= StackOkData(stk);
       if (error != StackState::Success) {

@@ -21,12 +21,12 @@ void GetData(BinData* data, FILE* file) {
 
   data->bufSz = FileSize(file);
 
-  data->buf = (byte_t*)calloc(data->bufSz, sizeof(char));
+  data->buf = (byte_t*)calloc(data->bufSz, sizeof(byte_t));
 
   FileRead(data, file);
 }
 
-void PutBuf(BinData* data, FILE* file) {
+void PutData(BinData* data, FILE* file) {
   ASSERT(data != nullptr);
   ASSERT(data != nullptr);
   ASSERT(file != nullptr);

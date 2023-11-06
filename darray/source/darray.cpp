@@ -5,7 +5,8 @@
 DArrayError DArray::Ctor(size_t initElemSize, size_t initCap) {
   elemSize = initElemSize;
   size = 0;
-  cap = (initCap < DArrayStandartAllocSize) ? DArrayStandartAllocSize : initCap;
+  cap = (DArrayStandartAllocSize > initCap) ?
+         DArrayStandartAllocSize : initCap;
 
   array = calloc(cap, elemSize);
   if (array == nullptr) {
@@ -32,7 +33,8 @@ DArrayError DArray::PushBack(void* elem) {
     return error;
   }
 
-  memcpy((char*)array + (size++)*elemSize, elem, elemSize);
+  memcpy((char*)array + size*elemSize, elem, elemSize);
+  size++;
 
   return error;
 }
@@ -48,7 +50,8 @@ DArrayError DArray::PopBack(void* elem) {
     return error;
   }
 
-  memcpy(elem, (char*)array + (--size)*elemSize, elemSize);
+  size--;
+  memcpy(elem, (char*)array + size*elemSize, elemSize);
 
   return error;
 }
@@ -126,7 +129,7 @@ DArrayError DArray::ResizeUp_() {
 
 DArrayError DArray::ResizeDown_() {
   if (size * DArrayMultiplyConst * DArrayMultiplyConst <= cap) {
-    cap = (cap > DArrayMultiplyConst) ? (cap / DArrayMultiplyConst) : DArrayMultiplyConst;
+    cap = (cap > DArrayStandartAllocSize) ? (cap / DArrayMultiplyConst) : DArrayStandartAllocSize; //NOTE - might have bug
 
     return Recalloc_();
   }

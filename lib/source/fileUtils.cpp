@@ -51,7 +51,7 @@ void GetData(FileData* data, FILE* file) {
   FillText(data);
 }
 
-void PutBuf(FileData* data, FILE* file) {
+void PutData(FileData* data, FILE* file) {
   ASSERT(data != nullptr);
   ASSERT(file != nullptr);
 

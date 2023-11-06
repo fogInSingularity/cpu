@@ -32,7 +32,7 @@ void GetData(FileData* data, FILE* file);
  * @param data FileData struct
  * @param file file to put buffer to
 */
-void PutBuf(FileData* data, FILE* file);
+void PutData(FileData* data, FILE* file);
 
 
 /**

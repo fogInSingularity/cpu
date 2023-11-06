@@ -1,15 +1,12 @@
 #include "../include/assemble.h"
 
-//TODO - add listing
-//TODO - docs
-//TODO - const
 //TODO - label: jmp l want throw error
 
 //static-----------------------------------------------------------------------
 
-static size_t Walkthrough = 0;
+static size_t WalkthroughCnt = 0;
 static const size_t MinBinBufAlloc = 64;
-static const  size_t MultConst = 2;
+static const size_t MultConst = 2;
 static FILE* ErrorStream = stdout;
 
 static char* CntLen(String* str, char* move, String* iterOver);
@@ -18,7 +15,7 @@ static Regs IsRegPassed(String str);
 
 //public-----------------------------------------------------------------------
 
-AsmError Assembler::SetUp(int argc, char** argv) {
+AsmError Assembler::Ctor(int argc, char** argv) {
   ASSERT(argv != nullptr);
 
   if (argc < 3) return AsmError::NOT_ENOUGH_FILES;
@@ -27,7 +24,7 @@ AsmError Assembler::SetUp(int argc, char** argv) {
   if (scriptf == nullptr) return AsmError::FILE_TO_READ_NOT_EXIST;
 
   GetData(&scriptFile, scriptf);
-  fclose(scriptf);
+  if (scriptf != nullptr) { fclose(scriptf); }
 
   binbuf = {nullptr, 0, MinBinBufAlloc};
   binbuf.buf = (byte_t*)calloc(MinBinBufAlloc, sizeof(byte_t));
@@ -41,19 +38,24 @@ AsmError Assembler::SetUp(int argc, char** argv) {
   }
 
   ErrorLine = nullptr;
+  ErrorLineNumber = 0;
   signature = Signature;
 
   return AsmError::SUCCESS;
 }
 
-void Assembler::CleanUp(int argc, char** argv) {
+void Assembler::Dtor(int argc, char** argv) {
   ASSERT(argv != nullptr);
 
   USE_VAR(argc);
 
-  FILE* byteFile = fopen(argv[2], "wb");
-  fwrite(binbuf.buf, sizeof(char), binbuf.size, byteFile);
-  fclose(byteFile);
+  if (argc >= 3) {
+    FILE* byteFile = fopen(argv[2], "wb");
+    if (binbuf.buf != nullptr) {
+      fwrite(binbuf.buf, sizeof(char), binbuf.size, byteFile);
+    }
+    fclose(byteFile);
+  }
 
   free(binbuf.buf);
   binbuf.buf = nullptr;
@@ -62,9 +64,13 @@ void Assembler::CleanUp(int argc, char** argv) {
 
   labelArr.Dtor();
 
+  ErrorLine = nullptr;
+  ErrorLineNumber = 0;
+
   FreeData(&scriptFile);
 }
 
+// NOTE: add function
 void Assembler::ThrowError(AsmError error) {
   switch (error) {
     case AsmError::SUCCESS:
@@ -72,43 +78,48 @@ void Assembler::ThrowError(AsmError error) {
       break;
 
     case AsmError::NOT_ENOUGH_FILES:
-      fputs(ERROR_M " too few files passed to program\n", ErrorStream);
+      ERROR_M("too few files passed to program");
       break;
     case AsmError::FILE_TO_READ_NOT_EXIST:
-      fputs(ERROR_M " cant open source file\n", ErrorStream);
+      ERROR_M("cant open source file");
       break;
     case AsmError::SETUP_CANT_ALLOC:
-      fputs(ERROR_M " unable to allocate memory for bytecode bufer\n", ErrorStream);
+      ERROR_M("unable to allocate memory for bytecode bufer");
       break;
     case AsmError::DARR_CTOR_CANT_ALLOC:
-      fputs(ERROR_M " unable to allocate memory for darray\n", ErrorStream);
+      ERROR_M("unable to allocate memory for darray");
       break;
     case AsmError::BINBUF_CANT_ALLOC:
-      fputs(ERROR_M " unable to allocate memory for binbuf\n", ErrorStream);
+      ERROR_M("unable to allocate memory for binbuf");
       break;
 
     case AsmError::STX_IDK_ARG:
-      fputs(ERROR_M " unknown argument passed:\n  ", ErrorStream);
+      ERROR_M("unknown argument passed:");
+      fprintf( ErrorStream, "%lu:", ErrorLineNumber);
       Fputs(ErrorLine, ErrorStream);
       fputc('\n', ErrorStream);
       break;
     case AsmError::STX_IDK_REG:
-      fputs(ERROR_M " unknown regester passed:\n  ", ErrorStream);
+      ERROR_M("unknown regester passed:");
+      fprintf( ErrorStream, "%lu:", ErrorLineNumber);
       Fputs(ErrorLine, ErrorStream);
       fputc('\n', ErrorStream);
       break;
     case AsmError::STX_IDK_CMD:
-      fputs(ERROR_M " unknown command passed:\n  ", ErrorStream);
+      ERROR_M("unknown command passed:");
+      fprintf( ErrorStream, "%lu:", ErrorLineNumber);
       Fputs(ErrorLine, ErrorStream);
       fputc('\n', ErrorStream);
       break;
     case AsmError::STX_IDK_LABEL:
-      fputs(ERROR_M " unknown label passed:\n  ", ErrorStream);
+      ERROR_M("unknown label passed:");
+      fprintf( ErrorStream, "%lu:", ErrorLineNumber);
       Fputs(ErrorLine, ErrorStream);
       fputc('\n', ErrorStream);
       break;
     case AsmError::STX_IDK_MEM_ACS:
-      fputs(ERROR_M " wrong memory access:\n  ", ErrorStream);
+      ERROR_M("wrong memory access:");
+      fprintf( ErrorStream, "%lu:", ErrorLineNumber);
       Fputs(ErrorLine, ErrorStream);
       fputc('\n', ErrorStream);
       break;
@@ -119,27 +130,31 @@ void Assembler::ThrowError(AsmError error) {
 }
 
 AsmError Assembler::Assemble() {
-  String* sourceMove = nullptr;
   AsmError error = AsmError::SUCCESS;
 
   // first walkthrough
-  Walkthrough++;
-  StoreVoid(&signature, sizeof(signature));
-  sourceMove = scriptFile.text;
-  while (sourceMove < scriptFile.text + scriptFile.nLines) {
-    error = ParseAndStore(sourceMove);
-    if (error != AsmError::SUCCESS) return error;
-
-    sourceMove++;
-  }
+  error = Walkthrough();
+  if (error != AsmError::SUCCESS) return error;
 
   binbuf.size = 0;
+  ErrorLineNumber = 0;
 
+  error = Walkthrough();
+  if (error != AsmError::SUCCESS) return error;
 
-  // second walkthrough
-  Walkthrough++;
-  StoreVoid(&signature, sizeof(signature));
-  sourceMove = scriptFile.text;
+  return error;
+}
+
+//private----------------------------------------------------------------------
+
+AsmError Assembler::Walkthrough() {
+  AsmError error = AsmError::SUCCESS;
+
+  WalkthroughCnt++;
+  error = StoreVoid(&signature, sizeof(signature));
+  if (error != AsmError::SUCCESS) return error;
+
+  String* sourceMove = scriptFile.text;
   while (sourceMove < scriptFile.text + scriptFile.nLines) {
     error = ParseAndStore(sourceMove);
     if (error != AsmError::SUCCESS) return error;
@@ -150,19 +165,16 @@ AsmError Assembler::Assemble() {
   return error;
 }
 
-//private----------------------------------------------------------------------
-
 AsmError Assembler::ParseAndStore(String* line) {
   ASSERT(line != nullptr);
   ASSERT(line->str != nullptr);
 
   ErrorLine = line;
-
-  // if (line->len == 0) return AsmError::SUCCESS;
+  ErrorLineNumber++;
 
   char* colon = Strchr(line, ':');
   if (colon != nullptr) { // lable or fn call
-    if (Walkthrough == 1) {                               // size = смещение от начала
+    if (WalkthroughCnt == 1) {                               // size = смещение от начала
       Label lbl = {{line->str, (size_t)(colon - line->str)}, (jmpAdr_t)binbuf.size};
       labelArr.PushBack(&lbl);
     }
@@ -188,19 +200,21 @@ AsmError Assembler::ParseAndStore(String* line) {
     //convert
     AsmError error = AsmError::SUCCESS;
 
-#define DEF_CMD(name, num, isJump, aldArgs, ...)         \
-  if (strncmp(cmd.str, #name, cmd.len) == 0) {           \
-    if (isJump) {                                        \
-      error = ParseJmp(&arg, num, aldArgs);              \
-      if (error != AsmError::SUCCESS) {return error;}    \
-    } else {                                             \
-      error = ParseCmd(&arg, num, aldArgs);              \
-      if (error != AsmError::SUCCESS) {return error;}    \
-    }                                                    \
-  } else
-/* end of defenition */
+    #define DEF_CMD(name, cmdId, isJump, allowedArgs, ...)         \
+      if (strncmp(cmd.str, #name, cmd.len) == 0) {           \
+        if (isJump) {                                        \
+          error = ParseJmp(&arg, cmdId, allowedArgs);              \
+          if (error != AsmError::SUCCESS) {return error;}    \
+        } else {                                             \
+          error = ParseCmd(&arg, cmdId, allowedArgs);              \
+          if (error != AsmError::SUCCESS) {return error;}    \
+        }                                                    \
+      } else
+    /* end of defenition */
 
     #include "../../shared/include/commandSet.h"
+
+    #undef DEF_CMP
     /* else */ {
       return AsmError::STX_IDK_CMD;
     };
@@ -209,12 +223,10 @@ AsmError Assembler::ParseAndStore(String* line) {
   return AsmError::SUCCESS;
 }
 
-#undef DEF_CMP
-
-AsmError Assembler::ParseJmp(String* arg, cmdKey_t num, uint64_t aldArgs) {
+AsmError Assembler::ParseJmp(String* arg, cmdKey_t cmdId, uint64_t allowedArgs) {
   ASSERT(arg != nullptr);
 
-  USE_VAR(aldArgs);
+  USE_VAR(allowedArgs);
 
   if (Strchr(arg, '[') != nullptr) {
     return AsmError::STX_IDK_MEM_ACS;
@@ -222,10 +234,10 @@ AsmError Assembler::ParseJmp(String* arg, cmdKey_t num, uint64_t aldArgs) {
     return AsmError::STX_IDK_MEM_ACS;
   }
 
-  cmdKey_t cmdKey = 0 | num | ARG_IMMED;
+  cmdKey_t cmdKey = 0 | cmdId | ARG_IMMED;
   jmpAdr_t jmpAdr = -1;
 
-  if (Walkthrough == 1) { //empty adr
+  if (WalkthroughCnt == 1) { //empty adr
     jmpAdr = 0;
   } else { // actual adr
     Label* ptr = nullptr;
@@ -239,6 +251,8 @@ AsmError Assembler::ParseJmp(String* arg, cmdKey_t num, uint64_t aldArgs) {
       }
     }
 
+    // NOTE: add jmp 5    (global index)
+    //    or add jmp 5/-5 (relative index)
     if (jmpAdr < 0) {
       return AsmError::STX_IDK_LABEL;
     }
@@ -247,43 +261,43 @@ AsmError Assembler::ParseJmp(String* arg, cmdKey_t num, uint64_t aldArgs) {
   return StoreJmp(cmdKey, jmpAdr);
 }
 
-AsmError Assembler::ParseCmd(String* strArg, cmdKey_t num, uint64_t aldArgs) {
+AsmError Assembler::ParseCmd(String* strArg, cmdKey_t cmdId, uint64_t allowedArgs) {
   ASSERT(strArg != nullptr);
 
   if (strArg->str == nullptr) {
-    return ParseCmdNoArgs(num, aldArgs);
+    return ParseCmdNoArgs(cmdId, allowedArgs);
   } else {
-    return ParseCmdWithArgs(strArg, num, aldArgs);
+    return ParseCmdWithArgs(strArg, cmdId, allowedArgs);
   }
 }
 
-AsmError Assembler::ParseCmdNoArgs(cmdKey_t num, uint64_t aldArgs) {
-  cmdKey_t cmdKey = 0 | num;
+AsmError Assembler::ParseCmdNoArgs(cmdKey_t cmdId, uint64_t allowedArgs) {
+  cmdKey_t cmdKey = 0 | cmdId;
 
-  if ((AllowedArgs::____ & aldArgs) == 0) {
+  if ((AllowedArgs::____ & allowedArgs) == 0) {
     return AsmError::STX_IDK_ARG;
   }
 
   return StoreCmd(cmdKey, 0, 0);
 }
 
-AsmError Assembler::ParseCmdWithArgs(String* strArg, cmdKey_t num, uint64_t aldArgs) {
+AsmError Assembler::ParseCmdWithArgs(String* strArg, cmdKey_t cmdId, uint64_t allowedArgs) {
   ASSERT(strArg != nullptr);
   ASSERT(strArg->str != nullptr);
 
   String arg = {strArg->str, strArg->len};
 
-  char* leftBracket = Strchr(&arg, '[');
+  char* leftBracket  = Strchr(&arg, '[');
   char* rightBracket = Strchr(&arg, ']');
-  char* plusSign = Strchr(&arg, '+');
+  char* plusSign     = Strchr(&arg, '+');
   uint8_t param = 0;
 
-  cmdKey_t cmdKey = 0 | num;
+  cmdKey_t cmdKey = 0 | cmdId;
 
   if ((leftBracket == nullptr) && (rightBracket == nullptr)) {
     ;
   } else if ((leftBracket != nullptr) && (rightBracket != nullptr)) {
-    param |= 0b1000;
+    param |= PassedArg::MEMORY_PASSED;
     cmdKey |= BitFlags::ARG_MEM_ACS;
 
     arg.len -= 2; // ignore []
@@ -296,7 +310,7 @@ AsmError Assembler::ParseCmdWithArgs(String* strArg, cmdKey_t num, uint64_t aldA
   immed_t immed = NAN;
 
   if (plusSign != nullptr) {
-    param |= 0b0011;
+    param |= PassedArg::IMMED_PASSED | PassedArg::REG_PASSED;
     cmdKey |= BitFlags::ARG_IMMED | BitFlags::ARG_REG;
 
     regId = IsRegPassed({arg.str, (size_t)(plusSign - arg.str)});
@@ -316,16 +330,16 @@ AsmError Assembler::ParseCmdWithArgs(String* strArg, cmdKey_t num, uint64_t aldA
     }
 
     if (!isnan(immed)) {
-      param |= 0b0001;
+      param |= PassedArg::IMMED_PASSED;
       cmdKey |= BitFlags::ARG_IMMED;
     }
     if ((regId != Regs::UNKNOWN_REG)) {
-      param |= 0b0010;
+      param |= PassedArg::REG_PASSED;
       cmdKey |= BitFlags::ARG_REG;
     }
   }
 
-  if (((1UL << param) & aldArgs) == 0) {
+  if (((1UL << param) & allowedArgs) == 0) {
     return AsmError::STX_IDK_ARG;
   }
 
@@ -367,20 +381,27 @@ AsmError Assembler::StoreVoid(void* elem, size_t elemSize) {
   ASSERT(elem != nullptr);
 
   if (binbuf.cap - binbuf.size < elemSize) {
-    binbuf.cap*= MultConst;
-    byte_t* holdBuf = binbuf.buf;
-
-    binbuf.buf = (byte_t*)realloc(binbuf.buf, binbuf.cap);
-    if (binbuf.buf == nullptr) {
-      binbuf.cap /= MultConst;
-      binbuf.buf = holdBuf;
-
-      return AsmError::BINBUF_CANT_ALLOC;
-    }
+    AsmError error = Recalloc();
+    if (error != AsmError::SUCCESS) return error;
   }
 
   memcpy(binbuf.buf + binbuf.size, elem, elemSize);
   binbuf.size += elemSize;
+
+  return AsmError::SUCCESS;
+}
+
+AsmError Assembler::Recalloc() {
+  binbuf.cap *= MultConst;
+  byte_t* holdBuf = binbuf.buf;
+
+  binbuf.buf = (byte_t*)realloc(binbuf.buf, binbuf.cap);
+  if (binbuf.buf == nullptr) {
+    binbuf.cap /= MultConst;
+    binbuf.buf = holdBuf;
+
+    return AsmError::BINBUF_CANT_ALLOC;
+  }
 
   return AsmError::SUCCESS;
 }
@@ -394,7 +415,7 @@ static char* CntLen(String* str, char* move, String* iterOver) {
 
   str->str = move;
 
-  while (!isspace(*move) && (move < iterOver->str + iterOver->len)) {
+  while (!isspace(*move) && (move < iterOver->str + iterOver->len) && (*move != ';')) {
     str->len++;
 
     move++;
@@ -407,6 +428,7 @@ static double IsNumberPassed(String str) {
   ASSERT(str.str != nullptr);
   // если в строке нашлась не цифра или больше 1 точки то это NAN
   size_t cntDots = 0;
+  size_t cntSign = 0;
   bool flag = true;
 
   char* moveStr = str.str;
@@ -418,6 +440,12 @@ static double IsNumberPassed(String str) {
         flag = false;
       } else {
         cntDots++;
+      }
+    } else if ((*moveStr == '-') || (*moveStr == '+')) {
+      if (cntSign >= 1) {
+        flag = false;
+      } else {
+        cntSign++;
       }
     } else {
       flag = false;
@@ -436,8 +464,10 @@ static double IsNumberPassed(String str) {
 static Regs IsRegPassed(String str) {
   ASSERT(str.str != nullptr);
 
+  static const size_t kRegLen = 3;
+
   //логика функции строиться на том что мы понимаем всё о регистрах
-  if (str.len != 3) {
+  if (str.len != kRegLen) {
     return Regs::UNKNOWN_REG;
   }
 
@@ -446,7 +476,7 @@ static Regs IsRegPassed(String str) {
   }
 
   regId_t regKey = (regId_t)(str.str[1] - 'a' + 1);
-  switch ((Regs)regKey) { //FIXME
+  switch ((Regs)regKey) { //NOTE
     case Regs::RAX:
       return Regs::RAX;
       break;

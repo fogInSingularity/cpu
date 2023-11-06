@@ -28,18 +28,7 @@ enum class Args {
   REG_AND_IMMED,
 };
 
-#define ERROR_M RED BOLD "error:" RESET
-
 const uint32_t Signature = 0x11FAADDE; // DEADFA11 stupid little endian
-
-// enum Commands: cmdKey_t {
-// #define DEF_CMD(name, num, isJump, aldArgs, ...)   ?
-//   CMD_ ## name = num,
-
-// // #include "../../shared/include/commandSet.h"
-
-// #undef DEF_CMD
-// };
 
 enum class Regs: regId_t {
   UNKNOWN_REG = 0,
@@ -48,11 +37,6 @@ enum class Regs: regId_t {
   RCX = 3,
   RDX = 4,
 };
-
-// __attribute_used__
-// static size_t RegIds[] = {
-//   1, 2, 3, 4
-// };
 
 enum BitFlags: cmdKey_t {
   CODE_ID_MASK   = 0b000'11111,

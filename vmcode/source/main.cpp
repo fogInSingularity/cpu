@@ -8,14 +8,14 @@ int main(int argc, char** argv) {
 
   VM vm = {};
 
-  error = vm.SetUp(argc, argv);
+  error = vm.Ctor(argc, argv);
 
   if (error == VMError::SUCCESS) {
     error = vm.Execute();
   }
 
   vm.ThrowError(error);
-  vm.CleanUp();
+  vm.Dtor();
 
   return 0;
 }
