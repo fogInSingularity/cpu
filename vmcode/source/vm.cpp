@@ -122,7 +122,7 @@ void VM::Dump(const char* file,const size_t line, const char* func) {
 
 VMError VM::Execute() {
   while (ip < binData.buf + binData.bufSz) {
-    Dump(__FILE__, __LINE__, __func__);
+    // Dump(__FILE__, __LINE__, __func__);
     VMError error = ExecuteCmd();
     if (error != VMError::SUCCESS) {
       return error;

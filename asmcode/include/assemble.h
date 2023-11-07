@@ -7,12 +7,15 @@
 #include <string.h>
 #include <math.h>
 
-#include "../../darray/include/darray.h"
 #include "../../lib/include/fileUtils.h"
-#include "../../shared/include/commands.h"
 #include "../../lib/include/color.h"
 #include "../../lib/include/utils.h"
-#include "../../stack/include/stack.h"
+#include "../../darray/include/darray.h"
+#include "../../algo/include/hash.h"
+#include "../../algo/include/qsort.h"
+#include "../../algo/include/bsearch.h"
+#include "../../shared/include/commands.h"
+#include "../../shared/include/errorMes.h"
 
 struct Label {
   String name;
@@ -27,7 +30,7 @@ struct BinBuf {
 
 namespace PassedArg {
   enum PassArg: uint8_t {
-    // MLRI
+                   // MLRI
     IMMED_PASSED  = 0b0001,
     REG_PASSED    = 0b0010,
     LABEL_PASSED  = 0b0100,

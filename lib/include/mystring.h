@@ -7,6 +7,7 @@
 
 #include "utils.h"
 #include "debug.h"
+#include "commonDefs.h"
 
 /// @brief string type
 struct String {

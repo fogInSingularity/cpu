@@ -12,6 +12,9 @@ static FILE* ErrorStream = stdout;
 static char* CntLen(String* str, char* move, String* iterOver);
 static double IsNumberPassed(String str);
 static Regs IsRegPassed(String str);
+static char* IgnoreSpaces(char* move, String* strBound);
+
+//TODO if that fits line should use {}
 
 //public-----------------------------------------------------------------------
 
@@ -70,7 +73,6 @@ void Assembler::Dtor(int argc, char** argv) {
   FreeData(&scriptFile);
 }
 
-// NOTE: add function
 void Assembler::ThrowError(AsmError error) {
   switch (error) {
     case AsmError::SUCCESS:
@@ -94,34 +96,19 @@ void Assembler::ThrowError(AsmError error) {
       break;
 
     case AsmError::STX_IDK_ARG:
-      ERROR_M("unknown argument passed:");
-      fprintf( ErrorStream, "%lu:", ErrorLineNumber);
-      Fputs(ErrorLine, ErrorStream);
-      fputc('\n', ErrorStream);
+      VERBOSE_ERROR_M("unknown argument passed:", ErrorLineNumber, ErrorLine);
       break;
     case AsmError::STX_IDK_REG:
-      ERROR_M("unknown regester passed:");
-      fprintf( ErrorStream, "%lu:", ErrorLineNumber);
-      Fputs(ErrorLine, ErrorStream);
-      fputc('\n', ErrorStream);
+      VERBOSE_ERROR_M("unknown regester passed:", ErrorLineNumber, ErrorLine);
       break;
     case AsmError::STX_IDK_CMD:
-      ERROR_M("unknown command passed:");
-      fprintf( ErrorStream, "%lu:", ErrorLineNumber);
-      Fputs(ErrorLine, ErrorStream);
-      fputc('\n', ErrorStream);
+      VERBOSE_ERROR_M("unknown command passed:", ErrorLineNumber, ErrorLine);
       break;
     case AsmError::STX_IDK_LABEL:
-      ERROR_M("unknown label passed:");
-      fprintf( ErrorStream, "%lu:", ErrorLineNumber);
-      Fputs(ErrorLine, ErrorStream);
-      fputc('\n', ErrorStream);
+      VERBOSE_ERROR_M("unknown label passed:", ErrorLineNumber, ErrorLine);
       break;
     case AsmError::STX_IDK_MEM_ACS:
-      ERROR_M("wrong memory access:");
-      fprintf( ErrorStream, "%lu:", ErrorLineNumber);
-      Fputs(ErrorLine, ErrorStream);
-      fputc('\n', ErrorStream);
+      VERBOSE_ERROR_M("wrong memory access:", ErrorLineNumber, ErrorLine);
       break;
     default:
       ASSERT(0 && "UNKNOWN ERROR CODE");
@@ -139,6 +126,7 @@ AsmError Assembler::Assemble() {
   binbuf.size = 0;
   ErrorLineNumber = 0;
 
+  // second walkthrough
   error = Walkthrough();
   if (error != AsmError::SUCCESS) return error;
 
@@ -174,8 +162,10 @@ AsmError Assembler::ParseAndStore(String* line) {
 
   char* colon = Strchr(line, ':');
   if (colon != nullptr) { // lable or fn call
-    if (WalkthroughCnt == 1) {                               // size = смещение от начала
-      Label lbl = {{line->str, (size_t)(colon - line->str)}, (jmpAdr_t)binbuf.size};
+    if (WalkthroughCnt == 1) {
+      char* moveStr = IgnoreSpaces(line->str, line);
+                                                         // size = смещение от начала
+      Label lbl = {{moveStr, (size_t)(colon - moveStr)}, (jmpAdr_t)binbuf.size};
       labelArr.PushBack(&lbl);
     }
   } else {
@@ -200,13 +190,13 @@ AsmError Assembler::ParseAndStore(String* line) {
     //convert
     AsmError error = AsmError::SUCCESS;
 
-    #define DEF_CMD(name, cmdId, isJump, allowedArgs, ...)         \
+    #define DEF_CMD(name, cmdId, isJump, allowedArgs, ...)   \
       if (strncmp(cmd.str, #name, cmd.len) == 0) {           \
         if (isJump) {                                        \
-          error = ParseJmp(&arg, cmdId, allowedArgs);              \
+          error = ParseJmp(&arg, cmdId, allowedArgs);        \
           if (error != AsmError::SUCCESS) {return error;}    \
         } else {                                             \
-          error = ParseCmd(&arg, cmdId, allowedArgs);              \
+          error = ParseCmd(&arg, cmdId, allowedArgs);        \
           if (error != AsmError::SUCCESS) {return error;}    \
         }                                                    \
       } else
@@ -494,4 +484,12 @@ static Regs IsRegPassed(String str) {
       return Regs::UNKNOWN_REG;
       break;
   }
+}
+
+static char* IgnoreSpaces(char* move, String* strBound) {
+  while (isspace(*move) && (move < strBound->str + strBound->len)) {
+    move++;
+  }
+
+  return move;
 }

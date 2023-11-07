@@ -6,6 +6,7 @@
 #include "../../lib/include/binFileUtils.h"
 #include "../../stack/include/stack.h"
 #include "../../shared/include/commands.h"
+#include "../../shared/include/errorMes.h"
 #include "dsl.h"
 
 typedef double memory_t;

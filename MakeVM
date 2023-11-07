@@ -6,7 +6,7 @@ DIRS = vmcode lib shared stack darray
 SOURCES = $(foreach dir, $(DIRS), $(wildcard $(dir)/source/*.cpp))
 DEFINES = -D_DEBUG
 
-FLAGS = -fdiagnostics-generate-patch -fdiagnostics-path-format=inline-events -p\
+FLAGS = -fdiagnostics-generate-patch -fdiagnostics-path-format=inline-events \
 -O0 -ggdb -std=c++17 -Wall -Wextra -Weffc++ -Waggressive-loop-optimizations \
 -Wc++14-compat -Wuseless-cast -Wmissing-declarations -Wcast-align -Wcast-qual \
 -Wchar-subscripts -Wconditionally-supported -Wconversion -Wctor-dtor-privacy \
@@ -26,7 +26,7 @@ FLAGS = -fdiagnostics-generate-patch -fdiagnostics-path-format=inline-events -p\
 float-divide-by-zero,integer-divide-by-zero,leak,nonnull-attribute,null,$\
 object-size,return,returns-nonnull-attribute,shift,signed-integer-overflow,$\
 undefined,unreachable,vla-bound,vptr
-# -Wlarger-than=8192
+# -Wlarger-than=8192 -p
 all:
 	@$(CC) $(SOURCES) $(FLAGS) $(DEFINES) -o $(EXE)
 

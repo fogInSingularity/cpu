@@ -5,10 +5,6 @@
 #include <ctype.h>
 
 #include "../include/assemble.h"
-#include "../../lib/include/fileUtils.h"
-#include "../../lib/include/debug.h"
-#include "../include/assemble.h"
-#include "../../darray/include/darray.h"
 
 int main(int argc, char** argv) {
   AsmError error = AsmError::SUCCESS;
