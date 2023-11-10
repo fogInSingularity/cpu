@@ -7,7 +7,7 @@
 #include <memory.h>
 #include <stdio.h>
 
-#include "../../lib/include/debug.h"
+#include "debug.h"
 
 typedef void Dump_t(void* elem);
 

@@ -9,8 +9,8 @@
 #include <malloc.h>
 #include <memory.h>
 
-#include "../../lib/include/utils.h"
-#include "../../algo/include/hash.h"
+#include "utils.h"
+#include "hash.h"
 
 #ifdef _DEBUG
   #define ON_DEBUG(...) { __VA_ARGS__ }

@@ -39,6 +39,8 @@ void FreeData(BinData* data) {
 
   free(data->buf);
   data->buf = nullptr;
+
+  data->bufSz = 0;
 }
 
 // -------------------------------------

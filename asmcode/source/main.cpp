@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <ctype.h>
 
-#include "../include/assemble.h"
+#include "assemble.h"
 
 int main(int argc, char** argv) {
   AsmError error = AsmError::SUCCESS;

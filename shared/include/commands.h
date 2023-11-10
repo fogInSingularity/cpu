@@ -6,9 +6,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "../../lib/include/debug.h"
-#include "../../lib/include/fileUtils.h"
-#include "../../stack/include/stack.h"
+#include "debug.h"
+#include "fileUtils.h"
+#include "stack.h"
 
 typedef uint8_t byte_t;
 typedef uint8_t cmdKey_t;

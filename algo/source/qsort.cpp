@@ -1,4 +1,4 @@
-#include "../include/qsort.h"
+#include "qsort.h"
 
 //static-----------------------------------------------------------------------
 
@@ -23,7 +23,7 @@ static void* Partition(void* left, void* right, size_t elSize,  Compare_t* Compa
     void* store = left;
 
     while (left < right) {
-        if (CompareFunc(left, pivot)) {
+        if (CompareFunc(left, pivot) < 0) {
             SwapBytes(store, left, elSize);
             store = (char*)store + elSize;
         }

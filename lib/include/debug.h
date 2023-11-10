@@ -15,6 +15,7 @@
 #define PRINT_ULONG(n)  fprintf(stderr, ">>> %lu <<<\n", n);
 #define PRINT_ULX(n)    fprintf(stderr, ">>> %lX <<<\n", n);
 #define PRINT_INT(n)    fprintf(stderr, ">>> %d <<<\n", n);
+#define PRINT_UINT(n)    fprintf(stderr, ">>> %u <<<\n", n);
 #define PRINT_DOUBLE(n) fprintf(stderr, ">>> %lf <<<\n", n);
 
 #define $        fprintf(stderr, BOLD MAGENTA ">>> %s(%d) %s\n"  RESET,__FILE__, __LINE__, __PRETTY_FUNCTION__);

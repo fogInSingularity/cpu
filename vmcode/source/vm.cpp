@@ -1,4 +1,4 @@
-#include "../include/vm.h"
+#include "vm.h"
 
 //TODO - if corrupt file it will segfall
 
@@ -124,9 +124,7 @@ VMError VM::Execute() {
   while (ip < binData.buf + binData.bufSz) {
     // Dump(__FILE__, __LINE__, __func__);
     VMError error = ExecuteCmd();
-    if (error != VMError::SUCCESS) {
-      return error;
-    }
+    if (error != VMError::SUCCESS) { return error; }
   }
 
   return VMError::SUCCESS;
@@ -151,21 +149,21 @@ VMError VM::ExecuteCmd() {
   if (cmdKey & BitFlags::ARG_IMMED) {
     memcpy(&arg, ip, sizeof(arg));
     ip += sizeof(arg);
-    both += + arg;
+    both += arg;
   }
 
-/* start of def */
-#define DEF_CMD(name, cmdId, isJmp, allowedArgs, ...) \
-  case cmdId: \
-    { __VA_ARGS__ } \
-    break;
-/* end of def */
+  /* start of def */
+  #define DEF_CMD(name, cmdId, isJmp, allowedArgs, ...) \
+    case cmdId: \
+      { __VA_ARGS__ } \
+      break;
+  /* end of def */
 
   switch (cmdKey & BitFlags::CODE_ID_MASK) {
-    #include "../../shared/include/commandSet.h"
+    #include "commandSet.h"
 
     default:
-      // PRINT_BYTE(cmdKey & BitFlags::CODE_ID_MASK);
+      //FIXME return error, shouldnt assert
       ASSERT(0 && "UNKNOWN COMMAND KEY");
       break;
   }

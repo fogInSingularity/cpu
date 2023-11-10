@@ -1,9 +1,12 @@
 CC = g++
 EXE = asm
 
-DIRS = asmcode lib shared stack darray
+DIRS = asmcode lib shared stack darray algo
 
 SOURCES = $(foreach dir, $(DIRS), $(wildcard $(dir)/source/*.cpp))
+HEADERS = $(foreach dir, $(DIRS), $(wildcard $(dir)/include/*.h))
+
+INCLUDE = -I./asmcode/include -I./darray/include -I./lib/include -I./shared/include -I./stack/include -I./algo/include
 
 DEFINES = -D_DEBUG
 FLAGS = -O0 -std=c++17 -Wall -Wextra -Weffc++ -Wno-inline -Waggressive-loop-optimizations \
@@ -28,10 +31,10 @@ undefined,unreachable,vla-bound,vptr
 # -Wlarger-than=8192 -p
 
 all:
-	@$(CC) $(SOURCES) $(FLAGS) $(DEFINES) -o $(EXE)
+	@$(CC) $(INCLUDE) $(SOURCES) $(FLAGS) $(DEFINES) -o $(EXE)
 
 release:
-	@$(CC) $(SOURCES) -O2 -std=c++17 -Wall -Wextra $(DEFINES) -o $(EXE)
+	@$(CC) $(INCLUDE) $(SOURCES) -O2 -std=c++17 -Wall -Wextra $(DEFINES) -o $(EXE)
 
 clean:
 	@rm asm

@@ -7,18 +7,19 @@
 #include <string.h>
 #include <math.h>
 
-#include "../../lib/include/fileUtils.h"
-#include "../../lib/include/color.h"
-#include "../../lib/include/utils.h"
-#include "../../darray/include/darray.h"
-#include "../../algo/include/hash.h"
-#include "../../algo/include/qsort.h"
-#include "../../algo/include/bsearch.h"
-#include "../../shared/include/commands.h"
-#include "../../shared/include/errorMes.h"
+#include "fileUtils.h"
+#include "binFileUtils.h"
+#include "color.h"
+#include "utils.h"
+#include "darray.h"
+#include "hash.h"
+#include "qsort.h"
+#include "bsearch.h"
+#include "commands.h"
+#include "errorMes.h"
 
 struct Label {
-  String name;
+  uint32_t labelKey;
   jmpAdr_t pos;
 };
 
@@ -56,9 +57,9 @@ enum class AsmError {
 
 struct Assembler {
  public:
-  BinBuf binbuf;
-  DArray labelArr;
-  FileData scriptFile;
+  BinBuf binbuf_;
+  DArray labelArr_;
+  FileData scriptFile_;
 
   AsmError Ctor(int argc, char** argv);
   void Dtor(int argc, char** argv);
@@ -66,9 +67,9 @@ struct Assembler {
 
   AsmError Assemble();
  private:
-  String* ErrorLine;
-  size_t ErrorLineNumber;
-  uint32_t signature;
+  String* errorLine_;
+  size_t errorLineNumber_;
+  uint32_t signature_;
 
   AsmError Walkthrough();
   AsmError ParseAndStore(String* line);

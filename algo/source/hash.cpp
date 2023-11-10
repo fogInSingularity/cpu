@@ -1,4 +1,4 @@
-#include "../include/hash.h"
+#include "hash.h"
 
 //static-----------------------------------------------------------------------
 
@@ -7,6 +7,8 @@ static inline uint32_t HashScramble(uint32_t k);
 //-----------------------------------------------------------------------------
 
 uint32_t Hash(const uint8_t* key, size_t len, uint32_t seed) {
+  ASSERT(key != nullptr);
+
 	uint32_t h = seed;
   uint32_t k = 0;
 

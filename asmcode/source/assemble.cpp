@@ -1,6 +1,4 @@
-#include "../include/assemble.h"
-
-//TODO - label: jmp l want throw error
+#include "assemble.h"
 
 //static-----------------------------------------------------------------------
 
@@ -13,36 +11,35 @@ static char* CntLen(String* str, char* move, String* iterOver);
 static double IsNumberPassed(String str);
 static Regs IsRegPassed(String str);
 static char* IgnoreSpaces(char* move, String* strBound);
-
-//TODO if that fits line should use {}
+static int Cmp(const void* a, const void* b);
 
 //public-----------------------------------------------------------------------
 
 AsmError Assembler::Ctor(int argc, char** argv) {
   ASSERT(argv != nullptr);
 
-  if (argc < 3) return AsmError::NOT_ENOUGH_FILES;
+  if (argc < 3) { return AsmError::NOT_ENOUGH_FILES; }
 
   FILE* scriptf = fopen(argv[1], "r");
-  if (scriptf == nullptr) return AsmError::FILE_TO_READ_NOT_EXIST;
+  if (scriptf == nullptr) { return AsmError::FILE_TO_READ_NOT_EXIST; }
 
-  GetData(&scriptFile, scriptf);
+  GetData(&scriptFile_, scriptf);
   if (scriptf != nullptr) { fclose(scriptf); }
 
-  binbuf = {nullptr, 0, MinBinBufAlloc};
-  binbuf.buf = (byte_t*)calloc(MinBinBufAlloc, sizeof(byte_t));
-  if (binbuf.buf == nullptr) {
+  binbuf_ = {nullptr, 0, MinBinBufAlloc};
+  binbuf_.buf = (byte_t*)calloc(MinBinBufAlloc, sizeof(byte_t));
+  if (binbuf_.buf == nullptr) {
     return AsmError::SETUP_CANT_ALLOC;
   }
 
-  DArrayError DAError = labelArr.Ctor(sizeof(Label));
+  DArrayError DAError = labelArr_.Ctor(sizeof(Label));
   if (DAError != DArrayError::SUCCESS) {
     return AsmError::DARR_CTOR_CANT_ALLOC;
   }
 
-  ErrorLine = nullptr;
-  ErrorLineNumber = 0;
-  signature = Signature;
+  errorLine_ = nullptr;
+  errorLineNumber_ = 0;
+  signature_ = Signature;
 
   return AsmError::SUCCESS;
 }
@@ -54,23 +51,20 @@ void Assembler::Dtor(int argc, char** argv) {
 
   if (argc >= 3) {
     FILE* byteFile = fopen(argv[2], "wb");
-    if (binbuf.buf != nullptr) {
-      fwrite(binbuf.buf, sizeof(char), binbuf.size, byteFile);
+    if (binbuf_.buf != nullptr) {
+      fwrite(binbuf_.buf, sizeof(char), binbuf_.size, byteFile);
     }
     fclose(byteFile);
   }
 
-  free(binbuf.buf);
-  binbuf.buf = nullptr;
-  binbuf.size = 0;
-  binbuf.cap = 0;
+  FreeData(&binbuf_);
 
-  labelArr.Dtor();
+  labelArr_.Dtor();
 
-  ErrorLine = nullptr;
-  ErrorLineNumber = 0;
+  errorLine_ = nullptr;
+  errorLineNumber_ = 0;
 
-  FreeData(&scriptFile);
+  FreeData(&scriptFile_);
 }
 
 void Assembler::ThrowError(AsmError error) {
@@ -92,23 +86,23 @@ void Assembler::ThrowError(AsmError error) {
       ERROR_M("unable to allocate memory for darray");
       break;
     case AsmError::BINBUF_CANT_ALLOC:
-      ERROR_M("unable to allocate memory for binbuf");
+      ERROR_M("unable to allocate memory for binbuf_");
       break;
 
     case AsmError::STX_IDK_ARG:
-      VERBOSE_ERROR_M("unknown argument passed:", ErrorLineNumber, ErrorLine);
+      VERBOSE_ERROR_M("unknown argument passed:", errorLineNumber_, errorLine_);
       break;
     case AsmError::STX_IDK_REG:
-      VERBOSE_ERROR_M("unknown regester passed:", ErrorLineNumber, ErrorLine);
+      VERBOSE_ERROR_M("unknown regester passed:", errorLineNumber_, errorLine_);
       break;
     case AsmError::STX_IDK_CMD:
-      VERBOSE_ERROR_M("unknown command passed:", ErrorLineNumber, ErrorLine);
+      VERBOSE_ERROR_M("unknown command passed:", errorLineNumber_, errorLine_);
       break;
     case AsmError::STX_IDK_LABEL:
-      VERBOSE_ERROR_M("unknown label passed:", ErrorLineNumber, ErrorLine);
+      VERBOSE_ERROR_M("unknown label passed:", errorLineNumber_, errorLine_);
       break;
     case AsmError::STX_IDK_MEM_ACS:
-      VERBOSE_ERROR_M("wrong memory access:", ErrorLineNumber, ErrorLine);
+      VERBOSE_ERROR_M("wrong memory access:", errorLineNumber_, errorLine_);
       break;
     default:
       ASSERT(0 && "UNKNOWN ERROR CODE");
@@ -121,14 +115,25 @@ AsmError Assembler::Assemble() {
 
   // first walkthrough
   error = Walkthrough();
-  if (error != AsmError::SUCCESS) return error;
+  if (error != AsmError::SUCCESS) { return error; }
 
-  binbuf.size = 0;
-  ErrorLineNumber = 0;
+  binbuf_.size = 0;
+  errorLineNumber_ = 0;
+
+  //FIXME - use Sort
+  // Sort(labelArr_.array, (char*)labelArr_.array + (labelArr_.size - 1)*sizeof(Label), sizeof(Label), &Cmp);
+  qsort(labelArr_.array, labelArr_.size, sizeof(Label), Cmp);
+
+  // for (size_t i = 0; i < labelArr_.size; i++) {
+  //   Label* ptr = nullptr;
+
+  //   labelArr_.At((void**)&ptr, i);
+  //   printf("%u\n", ptr->labelKey);
+  // }
 
   // second walkthrough
   error = Walkthrough();
-  if (error != AsmError::SUCCESS) return error;
+  if (error != AsmError::SUCCESS) { return error; }
 
   return error;
 }
@@ -139,13 +144,13 @@ AsmError Assembler::Walkthrough() {
   AsmError error = AsmError::SUCCESS;
 
   WalkthroughCnt++;
-  error = StoreVoid(&signature, sizeof(signature));
-  if (error != AsmError::SUCCESS) return error;
+  error = StoreVoid(&signature_, sizeof(signature_));
+  if (error != AsmError::SUCCESS) { return error; }
 
-  String* sourceMove = scriptFile.text;
-  while (sourceMove < scriptFile.text + scriptFile.nLines) {
+  String* sourceMove = scriptFile_.text;
+  while (sourceMove < scriptFile_.text + scriptFile_.nLines) {
     error = ParseAndStore(sourceMove);
-    if (error != AsmError::SUCCESS) return error;
+    if (error != AsmError::SUCCESS) { return error; }
 
     sourceMove++;
   }
@@ -157,16 +162,21 @@ AsmError Assembler::ParseAndStore(String* line) {
   ASSERT(line != nullptr);
   ASSERT(line->str != nullptr);
 
-  ErrorLine = line;
-  ErrorLineNumber++;
+  errorLine_ = line;
+  errorLineNumber_++;
 
   char* colon = Strchr(line, ':');
   if (colon != nullptr) { // lable or fn call
     if (WalkthroughCnt == 1) {
       char* moveStr = IgnoreSpaces(line->str, line);
-                                                         // size = смещение от начала
-      Label lbl = {{moveStr, (size_t)(colon - moveStr)}, (jmpAdr_t)binbuf.size};
-      labelArr.PushBack(&lbl);
+
+      if (moveStr >= colon) { return AsmError::STX_IDK_LABEL; }
+                                                                    // size = смещение от начала
+      Label lbl = {Hash((uint8_t*)moveStr, (size_t)(colon - moveStr)), (jmpAdr_t)binbuf_.size};
+
+      // PRINT_UINT(lbl.labelKey);
+
+      labelArr_.PushBack(&lbl);
     }
   } else {
     String cmd = {nullptr, 0};
@@ -185,7 +195,7 @@ AsmError Assembler::ParseAndStore(String* line) {
       }
     }
 
-    if (cmd.str == nullptr) return AsmError::SUCCESS;
+    if (cmd.str == nullptr) { return AsmError::SUCCESS; }
 
     //convert
     AsmError error = AsmError::SUCCESS;
@@ -194,10 +204,10 @@ AsmError Assembler::ParseAndStore(String* line) {
       if (strncmp(cmd.str, #name, cmd.len) == 0) {           \
         if (isJump) {                                        \
           error = ParseJmp(&arg, cmdId, allowedArgs);        \
-          if (error != AsmError::SUCCESS) {return error;}    \
+          if (error != AsmError::SUCCESS) { return error; }  \
         } else {                                             \
           error = ParseCmd(&arg, cmdId, allowedArgs);        \
-          if (error != AsmError::SUCCESS) {return error;}    \
+          if (error != AsmError::SUCCESS) { return error; }  \
         }                                                    \
       } else
     /* end of defenition */
@@ -225,27 +235,27 @@ AsmError Assembler::ParseJmp(String* arg, cmdKey_t cmdId, uint64_t allowedArgs) 
   }
 
   cmdKey_t cmdKey = 0 | cmdId | ARG_IMMED;
-  jmpAdr_t jmpAdr = -1;
+  jmpAdr_t jmpAdr = 0;
 
-  if (WalkthroughCnt == 1) { //empty adr
-    jmpAdr = 0;
-  } else { // actual adr
+  if (WalkthroughCnt == 2) { //actual adr
     Label* ptr = nullptr;
 
-    for (size_t i = 0; i < labelArr.size; i++) {
-      labelArr.At((void**)&ptr, i);
-      if (Strcmp((String*)ptr, arg) == 0) {
-        jmpAdr = ptr->pos;
+    char* moveStr = IgnoreSpaces(arg->str, arg);
+    size_t len = arg->len - (size_t)(moveStr - arg->str);
+    uint32_t labelHash = Hash((const uint8_t*)moveStr, len);
 
-        break;
-      }
-    }
+    Label find = {labelHash, 0};
+
+    // ptr = (Label*)BSearch(&find, labelArr_.array, labelArr_.size, sizeof(Label), &Cmp);
+    //FIXME - use BSearch
+    ptr = (Label*)bsearch(&find, labelArr_.array, labelArr_.size, sizeof(Label), &Cmp);
+
+    if (ptr == nullptr) { return AsmError::STX_IDK_LABEL; }
+    jmpAdr = (ptr->pos);
+
 
     // NOTE: add jmp 5    (global index)
     //    or add jmp 5/-5 (relative index)
-    if (jmpAdr < 0) {
-      return AsmError::STX_IDK_LABEL;
-    }
   }
 
   return StoreJmp(cmdKey, jmpAdr);
@@ -315,7 +325,7 @@ AsmError Assembler::ParseCmdWithArgs(String* strArg, cmdKey_t cmdId, uint64_t al
 
     if (!isnan(immed) && (regId != Regs::UNKNOWN_REG)) {
       // immed and regId shouldt be passed at the same time
-      // is it even possible
+      // is it even possible?
       return AsmError::STX_IDK_ARG;
     }
 
@@ -340,10 +350,10 @@ AsmError Assembler::StoreJmp(cmdKey_t cmdKey, jmpAdr_t jmpAdr) {
   AsmError error = AsmError::SUCCESS;
 
   error = StoreVoid(&cmdKey, sizeof(cmdKey));
-  if (error != AsmError::SUCCESS) return error;
+  if (error != AsmError::SUCCESS) { return error; }
 
   error = StoreVoid(&jmpAdr, sizeof(jmpAdr));
-  if (error != AsmError::SUCCESS) return error;
+  if (error != AsmError::SUCCESS) { return error; };
 
   return error;
 }
@@ -352,16 +362,16 @@ AsmError Assembler::StoreCmd(cmdKey_t cmdKey, regId_t regId, immed_t immed) {
   AsmError error = AsmError::SUCCESS;
 
   error = StoreVoid(&cmdKey, sizeof(cmdKey));
-  if (error != AsmError::SUCCESS) return error;
+  if (error != AsmError::SUCCESS) { return error; }
 
   if (cmdKey & BitFlags::ARG_REG) {
     error = StoreVoid(&regId, sizeof(regId));
-    if (error != AsmError::SUCCESS) return error;
+    if (error != AsmError::SUCCESS) { return error; }
   }
 
   if (cmdKey & BitFlags::ARG_IMMED) {
     error = StoreVoid(&immed, sizeof(immed));
-    if (error != AsmError::SUCCESS) return error;
+    if (error != AsmError::SUCCESS) { return error; }
   }
 
   return error;
@@ -370,28 +380,30 @@ AsmError Assembler::StoreCmd(cmdKey_t cmdKey, regId_t regId, immed_t immed) {
 AsmError Assembler::StoreVoid(void* elem, size_t elemSize) {
   ASSERT(elem != nullptr);
 
-  if (binbuf.cap - binbuf.size < elemSize) {
+  if (binbuf_.cap - binbuf_.size < elemSize) {
     AsmError error = Recalloc();
-    if (error != AsmError::SUCCESS) return error;
+    if (error != AsmError::SUCCESS) { return error; }
   }
 
-  memcpy(binbuf.buf + binbuf.size, elem, elemSize);
-  binbuf.size += elemSize;
+  memcpy(binbuf_.buf + binbuf_.size, elem, elemSize);
+  binbuf_.size += elemSize;
 
   return AsmError::SUCCESS;
 }
 
 AsmError Assembler::Recalloc() {
-  binbuf.cap *= MultConst;
-  byte_t* holdBuf = binbuf.buf;
+  binbuf_.cap *= MultConst;
+  byte_t* holdBuf = binbuf_.buf;
 
-  binbuf.buf = (byte_t*)realloc(binbuf.buf, binbuf.cap);
-  if (binbuf.buf == nullptr) {
-    binbuf.cap /= MultConst;
-    binbuf.buf = holdBuf;
+  binbuf_.buf = (byte_t*)realloc(binbuf_.buf, binbuf_.cap);
+  if (binbuf_.buf == nullptr) {
+    binbuf_.cap /= MultConst;
+    binbuf_.buf = holdBuf;
 
     return AsmError::BINBUF_CANT_ALLOC;
   }
+
+  //FIXME - add memset
 
   return AsmError::SUCCESS;
 }
@@ -405,7 +417,9 @@ static char* CntLen(String* str, char* move, String* iterOver) {
 
   str->str = move;
 
-  while (!isspace(*move) && (move < iterOver->str + iterOver->len) && (*move != ';')) {
+  while (!isspace(*move)
+         && (move < iterOver->str + iterOver->len)
+         && (*move != ';')) {
     str->len++;
 
     move++;
@@ -416,7 +430,7 @@ static char* CntLen(String* str, char* move, String* iterOver) {
 
 static double IsNumberPassed(String str) {
   ASSERT(str.str != nullptr);
-  // если в строке нашлась не цифра или больше 1 точки то это NAN
+  // если в строке нашлась не цифра или больше 1 точки или знака то это NAN
   size_t cntDots = 0;
   size_t cntSign = 0;
   bool flag = true;
@@ -457,9 +471,7 @@ static Regs IsRegPassed(String str) {
   static const size_t kRegLen = 3;
 
   //логика функции строиться на том что мы понимаем всё о регистрах
-  if (str.len != kRegLen) {
-    return Regs::UNKNOWN_REG;
-  }
+  if (str.len != kRegLen) { return Regs::UNKNOWN_REG; }
 
   if ((str.str[0] != 'r') || (str.str[2] != 'x')) {
     return Regs::UNKNOWN_REG;
@@ -487,9 +499,30 @@ static Regs IsRegPassed(String str) {
 }
 
 static char* IgnoreSpaces(char* move, String* strBound) {
-  while (isspace(*move) && (move < strBound->str + strBound->len)) {
+  ASSERT(move != nullptr);
+  ASSERT(strBound != nullptr);
+
+  while (isspace(*move)
+         && (move < strBound->str + strBound->len)) {
     move++;
   }
 
   return move;
+}
+
+//NOTE stupidest bug because of overflow that take me more than hour
+static int Cmp(const void* a, const void* b) {
+  const Label* ptrA = (const Label*)a;
+  const Label* ptrB = (const Label*)b;
+
+  int res = 0;
+  if (ptrA->labelKey > ptrB->labelKey) {
+    res = 1;
+  } else if (ptrA->labelKey < ptrB->labelKey) {
+    res = -1;
+  } else {
+    res = 0;
+  }
+
+  return res;
 }

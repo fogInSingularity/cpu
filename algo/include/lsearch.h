@@ -1,5 +1,5 @@
-#ifndef BSEARCH_H
-#define BSEARCH_H
+#ifndef LSEARCH_H
+#define LSEARCH_H
 
 #include <stddef.h>
 #include <stddef.h>
@@ -10,6 +10,6 @@
 /// @brief alias for compare function
 typedef int compare_t(const void* a, const void* b);
 
-void* BSearch(const void* elem, void* left, size_t size, size_t elSize, compare_t* CompareFunc);
+void* LSearch(const void* key, void* base, size_t size, size_t elSize, compare_t* CompareFunc);
 
-#endif // BSEARCH_H
+#endif
