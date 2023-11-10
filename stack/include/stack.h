@@ -31,7 +31,7 @@
 #endif // _HASH_PROT
 
 typedef double elem_t;
-const ssize_t StandardAllocSize = 8;
+static const ssize_t StandardAllocSize = 8;
 
 #ifdef _CANARY_PROT
 typedef uint64_t canary_t;
@@ -64,7 +64,7 @@ enum StackState {
   ErrorDtor        = 1 << 1,
   ErrorRecalloc    = 1 << 2,
   ErrorPopNoEl     = 1 << 3,
-  // ---StackOkErrors---
+  // ----StackOkErrors----
   ErrorStkNull     = 1 << 4,
   ErrorStkLCanary  = 1 << 5,
   ErrorStkRCanary  = 1 << 6,

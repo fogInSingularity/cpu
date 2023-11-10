@@ -3,10 +3,10 @@
 
 #include <math.h>
 
-#include "../../lib/include/binFileUtils.h"
-#include "../../stack/include/stack.h"
-#include "../../shared/include/commands.h"
-#include "../../shared/include/errorMes.h"
+#include "binFileUtils.h"
+#include "stack.h"
+#include "commands.h"
+#include "errorMes.h"
 #include "dsl.h"
 
 typedef double memory_t;
@@ -15,14 +15,15 @@ static const size_t NOfRegs = 4;
 static const size_t MemorySize = 100;
 
 enum class VMError {
-  SUCCESS,
-  HLT,
-  NOT_ENOUGH_FILES,
-  FILE_TO_READ_NOT_EXIST,
-  SETUP_STACK_CANT_INIT,
-  UNKNOWN_SIGNATURE,
-  STACK_CANT_POP,
-  STACK_CANT_PUSH,
+  SUCCESS                = 0,
+  HLT                    = 1,
+  NOT_ENOUGH_FILES       = 2,
+  FILE_TO_READ_NOT_EXIST = 3,
+  SETUP_STACK_CANT_INIT  = 4,
+  UNKNOWN_SIGNATURE      = 5,
+  STACK_CANT_POP         = 6,
+  STACK_CANT_PUSH        = 7,
+  UNKNOWN_COMMAND_KEY    = 8,
 };
 
 struct Cpu {
@@ -36,7 +37,6 @@ struct VM {
  public:
   BinData binData;
   byte_t* ip;
-
   Cpu cpu;
 
   VMError Ctor(int argc, char** argv);

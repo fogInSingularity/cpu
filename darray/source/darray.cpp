@@ -1,4 +1,4 @@
-#include "../include/darray.h"
+#include "darray.h"
 
 //public-----------------------------------------------------------------------
 
@@ -9,9 +9,7 @@ DArrayError DArray::Ctor(size_t initElemSize, size_t initCap) {
          DArrayStandartAllocSize : initCap;
 
   array = calloc(cap, elemSize);
-  if (array == nullptr) {
-    return DArrayError::CTOR_CANT_ALLOC;
-  }
+  if (array == nullptr) { return DArrayError::CTOR_CANT_ALLOC; }
 
   return DArrayError::SUCCESS;
 }
@@ -29,57 +27,44 @@ DArrayError DArray::Dtor() {
 
 DArrayError DArray::PushBack(void* elem) {
   DArrayError error = ResizeUp_();
-  if (error != DArrayError::SUCCESS) {
-    return error;
-  }
+  if (error != DArrayError::SUCCESS) { return error; }
 
-  memcpy((char*)array + size*elemSize, elem, elemSize);
+  memcpy((char*)array + size * elemSize, elem, elemSize);
   size++;
 
   return error;
 }
 
 DArrayError DArray::PopBack(void* elem) {
+  if (size <= 0) { return DArrayError::EMPTY_DARR_POP; }
+
   DArrayError error = ResizeDown_();
-
-  if (size <= 0) {
-    return DArrayError::EMPTY_DARR_POP;
-  }
-
-  if (error != DArrayError::SUCCESS) {
-    return error;
-  }
+  if (error != DArrayError::SUCCESS) { return error; }
 
   size--;
-  memcpy(elem, (char*)array + size*elemSize, elemSize);
+  memcpy(elem, (char*)array + size * elemSize, elemSize);
 
   return error;
 }
 
 DArrayError DArray::SetAt(void* elem, size_t index) {
-  if (index > size - 1) {
-    return DArrayError::SETAT_OUT_OF_BOUNDS;
-  }
+  if (index > size - 1) { return DArrayError::SETAT_OUT_OF_BOUNDS; }
 
-  memcpy((char*)array + index*elemSize, elem, elemSize);
+  memcpy((char*)array + index * elemSize, elem, elemSize);
 
   return DArrayError::SUCCESS;
 }
 
 DArrayError DArray::GetAt(void* elem, size_t index) {
-  if (index > size - 1) {
-    return DArrayError::GETAT_OUT_OF_BOUNDS;
-  }
+  if (index > size - 1) { return DArrayError::GETAT_OUT_OF_BOUNDS; }
 
-  memcpy(elem, (char*)array + index*elemSize, elemSize);
+  memcpy(elem, (char*)array + index * elemSize, elemSize);
 
   return DArrayError::SUCCESS;
 }
 
 DArrayError DArray::At(void** retPtr, size_t index) {
-  if (index > size - 1) {
-    return DArrayError::AT_OUT_OF_BOUNDS;
-  }
+  if (index > size - 1) { return DArrayError::AT_OUT_OF_BOUNDS; }
 
   *retPtr = (char*)array + index*elemSize;
 
@@ -129,7 +114,10 @@ DArrayError DArray::ResizeUp_() {
 
 DArrayError DArray::ResizeDown_() {
   if (size * DArrayMultiplyConst * DArrayMultiplyConst <= cap) {
-    cap = (cap > DArrayStandartAllocSize) ? (cap / DArrayMultiplyConst) : DArrayStandartAllocSize; //NOTE - might have bug
+    //NOTE - might have bug
+    cap = (cap > DArrayStandartAllocSize)
+          ? (cap / DArrayMultiplyConst)
+          : DArrayStandartAllocSize;
 
     return Recalloc_();
   }
@@ -139,13 +127,13 @@ DArrayError DArray::ResizeDown_() {
 
 DArrayError DArray::Recalloc_() {
   void* hold = array;
-  array = realloc(array, cap*elemSize);
+  array = realloc(array, cap * elemSize);
   if (array == nullptr) {
     array = hold;
     return DArrayError::RECLC_CANT_ALLOC;
   }
 
-  memset((char*)array + size*elemSize, 0, (cap - size)*elemSize);
+  memset((char*)array + size * elemSize, 0, (cap - size) * elemSize);
 
   return DArrayError::SUCCESS;
 }

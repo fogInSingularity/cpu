@@ -40,19 +40,19 @@ namespace PassedArg {
 }
 
 enum class AsmError {
-  SUCCESS,
+  SUCCESS                = 0,
 
-  NOT_ENOUGH_FILES,
-  FILE_TO_READ_NOT_EXIST,
-  SETUP_CANT_ALLOC,
-  DARR_CTOR_CANT_ALLOC,
-  BINBUF_CANT_ALLOC,
+  NOT_ENOUGH_FILES       = 1,
+  FILE_TO_READ_NOT_EXIST = 2,
+  SETUP_CANT_ALLOC       = 3,
+  DARR_CTOR_CANT_ALLOC   = 4,
+  BINBUF_CANT_ALLOC      = 5,
 
-  STX_IDK_ARG,
-  STX_IDK_REG,
-  STX_IDK_CMD,
-  STX_IDK_LABEL,
-  STX_IDK_MEM_ACS,
+  STX_IDK_ARG            = 6,
+  STX_IDK_REG            = 7,
+  STX_IDK_CMD            = 8,
+  STX_IDK_LABEL          = 9,
+  STX_IDK_MEM_ACS        = 10,
 };
 
 struct Assembler {

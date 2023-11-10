@@ -63,6 +63,9 @@ void VM::ThrowError(VMError error) {
     case VMError::STACK_CANT_PUSH:
       ERROR_M("stack cant push");
       break;
+    case VMError::UNKNOWN_COMMAND_KEY:
+      ERROR_M("unknown command key");
+      break;
     default:
       ASSERT(0 && "UNKNOWN ERROR CODE");
       break;
@@ -122,7 +125,6 @@ void VM::Dump(const char* file,const size_t line, const char* func) {
 
 VMError VM::Execute() {
   while (ip < binData.buf + binData.bufSz) {
-    // Dump(__FILE__, __LINE__, __func__);
     VMError error = ExecuteCmd();
     if (error != VMError::SUCCESS) { return error; }
   }
@@ -143,7 +145,7 @@ VMError VM::ExecuteCmd() {
   if (cmdKey & BitFlags::ARG_REG) {
     regId = *ip;
     ip += sizeof(regId);
-    both += cpu.regs[regId-1ul];
+    both += cpu.regs[regId-1l];
   }
 
   if (cmdKey & BitFlags::ARG_IMMED) {
@@ -153,9 +155,9 @@ VMError VM::ExecuteCmd() {
   }
 
   /* start of def */
-  #define DEF_CMD(name, cmdId, isJmp, allowedArgs, ...) \
-    case cmdId: \
-      { __VA_ARGS__ } \
+  #define DEF_CMD(name, cmdId, isJmp, allowedArgs, ...)                       \
+    case cmdId:                                                               \
+      { __VA_ARGS__ }                                                         \
       break;
   /* end of def */
 
@@ -163,14 +165,11 @@ VMError VM::ExecuteCmd() {
     #include "commandSet.h"
 
     default:
-      //FIXME return error, shouldnt assert
-      ASSERT(0 && "UNKNOWN COMMAND KEY");
+      return VMError::UNKNOWN_COMMAND_KEY;
       break;
   }
 
-#undef DEF_CMD
+  #undef DEF_CMD
 
   return VMError::SUCCESS;
 }
-
-//static-----------------------------------------------------------------------

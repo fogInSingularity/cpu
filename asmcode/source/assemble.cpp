@@ -57,7 +57,9 @@ void Assembler::Dtor(int argc, char** argv) {
     fclose(byteFile);
   }
 
-  FreeData(&binbuf_);
+  free(binbuf_.buf);
+  binbuf_.size = 0;
+  binbuf_.cap = 0;
 
   labelArr_.Dtor();
 
@@ -124,13 +126,6 @@ AsmError Assembler::Assemble() {
   // Sort(labelArr_.array, (char*)labelArr_.array + (labelArr_.size - 1)*sizeof(Label), sizeof(Label), &Cmp);
   qsort(labelArr_.array, labelArr_.size, sizeof(Label), Cmp);
 
-  // for (size_t i = 0; i < labelArr_.size; i++) {
-  //   Label* ptr = nullptr;
-
-  //   labelArr_.At((void**)&ptr, i);
-  //   printf("%u\n", ptr->labelKey);
-  // }
-
   // second walkthrough
   error = Walkthrough();
   if (error != AsmError::SUCCESS) { return error; }
@@ -173,8 +168,6 @@ AsmError Assembler::ParseAndStore(String* line) {
       if (moveStr >= colon) { return AsmError::STX_IDK_LABEL; }
                                                                     // size = смещение от начала
       Label lbl = {Hash((uint8_t*)moveStr, (size_t)(colon - moveStr)), (jmpAdr_t)binbuf_.size};
-
-      // PRINT_UINT(lbl.labelKey);
 
       labelArr_.PushBack(&lbl);
     }
@@ -403,7 +396,7 @@ AsmError Assembler::Recalloc() {
     return AsmError::BINBUF_CANT_ALLOC;
   }
 
-  //FIXME - add memset
+  memset(binbuf_.buf + binbuf_.size, 0, binbuf_.cap - binbuf_.size);
 
   return AsmError::SUCCESS;
 }
@@ -430,6 +423,7 @@ static char* CntLen(String* str, char* move, String* iterOver) {
 
 static double IsNumberPassed(String str) {
   ASSERT(str.str != nullptr);
+
   // если в строке нашлась не цифра или больше 1 точки или знака то это NAN
   size_t cntDots = 0;
   size_t cntSign = 0;

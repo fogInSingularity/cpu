@@ -1,4 +1,4 @@
-#include "../include/stack.h"
+#include "stack.h"
 
 static const ssize_t MultiplyConst = 2;
 static const elem_t Nullifier = 0xDEAD;

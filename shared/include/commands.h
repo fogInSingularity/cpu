@@ -17,25 +17,25 @@ typedef uint8_t regId_t;
 typedef double immed_t;
 typedef double jmpAdr_t;
 typedef double arg_t;
-
 typedef double reg_t;
 
 enum class Args {
-  INIT_ARGS,
-  NO_ARGS,
-  ONLY_REG,
-  ONLY_IMMED,
-  REG_AND_IMMED,
+  INIT_ARGS     = 0,
+  NO_ARGS       = 1,
+  ONLY_REG      = 2,
+  ONLY_IMMED    = 3,
+  REG_AND_IMMED = 4,
 };
 
-const uint32_t Signature = 0x11FAADDE; // DEADFA11 stupid little endian
+// DEADFA11 stupid little endian
+const uint32_t Signature = 0x11FAADDE;
 
 enum class Regs: regId_t {
   UNKNOWN_REG = 0,
-  RAX = 1,
-  RBX = 2,
-  RCX = 3,
-  RDX = 4,
+  RAX         = 1,
+  RBX         = 2,
+  RCX         = 3,
+  RDX         = 4,
 };
 
 enum BitFlags: cmdKey_t {
@@ -68,4 +68,3 @@ namespace AllowedArgs {
   };
 }
 #endif // COMMANDS_H
-

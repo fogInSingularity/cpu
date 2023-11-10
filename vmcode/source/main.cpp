@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../include/vm.h"
+#include "vm.h"
 
 int main(int argc, char** argv) {
   VMError error = VMError::SUCCESS;
