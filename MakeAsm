@@ -34,7 +34,10 @@ all:
 	@$(CC) $(INCLUDE) $(SOURCES) $(FLAGS) $(DEFINES) -o $(EXE)
 
 release:
-	@$(CC) $(INCLUDE) $(SOURCES) -O2 -std=c++17 -Wall -Wextra $(DEFINES) -o $(EXE)
+	@$(CC) $(INCLUDE) $(SOURCES) -O2 -std=c++17 $(DEFINES) -o $(EXE)
 
 clean:
 	@rm asm
+
+analyze:
+	@clang-tidy $(SOURCES) -checks=clang-analyzer-*

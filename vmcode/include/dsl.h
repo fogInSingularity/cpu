@@ -30,6 +30,7 @@
   ip = binData.buf + (size_t)adr;
 
 
+//function
 #define MEM_POP()                                                             \
   do {                                                                        \
     size_t memAdr = 0;                                                        \
@@ -47,5 +48,17 @@
 
 #define REG_POP()                                                             \
   POP(cpu.regs + regId - 1ul);
+
+#define MEMDUMP() MemDump();
+
+#define CONDITIONAL_JUMP(condition)                                           \
+  elem_t tmp1 = 0;                                                            \
+  elem_t tmp2 = 0;                                                            \
+  POP(&tmp1);                                                                 \
+  POP(&tmp2);                                                                 \
+                                                                              \
+  if (condition) {                                                            \
+    JUMP_ON_ADR(ADR);                                                         \
+  }
 
 #endif // DSL_H

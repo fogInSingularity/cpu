@@ -43,6 +43,7 @@ struct VM {
   void Dtor();
   void ThrowError(VMError error);
   void Dump(const char* file,const size_t line, const char* func);
+  void MemDump();
 
   VMError Execute();
  private:

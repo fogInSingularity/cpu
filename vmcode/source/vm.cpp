@@ -1,6 +1,6 @@
 #include "vm.h"
 
-//TODO - if corrupt file it will segfall
+//TODO - if corrupt file it will segfault
 
 //static-----------------------------------------------------------------------
 
@@ -101,16 +101,16 @@ void VM::Dump(const char* file,const size_t line, const char* func) {
   fprintf(stderr, "#        rdx %lf\n", cpu.regs[3]);
   fprintf(stderr, "#      }\n");
 
-  // fprintf(stderr, "#      memory\n");
-  // fprintf(stderr, "#      {\n");
-  // for (size_t i = 0; i < MemorySize/10; i++) {
-  // fprintf(stderr, "#        ");
-  //   for (size_t j = 0; j < MemorySize/10; j++) {
-  //     fprintf(stderr, "%.3lf ", cpu.memory[i*10 + j]);
-  //   }
-  //   putc('\n', stderr);
-  // }
-  // fprintf(stderr, "#      }\n");
+  fprintf(stderr, "#      memory\n");
+  fprintf(stderr, "#      {\n");
+  for (size_t i = 0; i < MemorySize/10; i++) {
+  fprintf(stderr, "#        ");
+    for (size_t j = 0; j < MemorySize/10; j++) {
+      fprintf(stderr, "%.3lf ", cpu.memory[i*10 + j]);
+    }
+    putc('\n', stderr);
+  }
+  fprintf(stderr, "#      }\n");
 
   fprintf(stderr, "#      stk {}\n");
   fprintf(stderr, "#    }\n");
@@ -122,9 +122,30 @@ void VM::Dump(const char* file,const size_t line, const char* func) {
   fprintf(stderr, "#####################################################\n");
 }
 
+void VM::MemDump() {
+  char memCpy[MemorySize] = {};
+  double max = 0;
+  for (size_t i = 0; i < MemorySize; i++) {
+    max = MAX(max, abs(cpu.memory[i]));
+  }
+
+  for (size_t i = 0; i < MemorySize; i++) {
+    memCpy[i] = (char)((cpu.memory[i]/max)*127);
+  }
+
+  size_t side = MemorySize / 10;
+  for (size_t i = 0; i < side; i++) {
+    for (size_t j = 0; j < side; j++) {
+      putc(memCpy[i * side + j], ErrorStream);
+      putc(' ', ErrorStream);
+    }
+    putc('\n', ErrorStream);
+  }
+}
 
 VMError VM::Execute() {
   while (ip < binData.buf + binData.bufSz) {
+    // Dump(__FILE__, __LINE__, __func__);
     VMError error = ExecuteCmd();
     if (error != VMError::SUCCESS) { return error; }
   }

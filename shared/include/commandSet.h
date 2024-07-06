@@ -18,7 +18,6 @@ DEF_CMD(push, 2, false, AllowedArgs::___I | AllowedArgs::__R_ | AllowedArgs::__R
   }
 })
 
-//NOTE: might not work
 DEF_CMD(pop, 3, false, AllowedArgs::__R_ | AllowedArgs::M__I |
                        AllowedArgs::M_R_ | AllowedArgs::M_RI, {
   if (MEM_ACCESS) {
@@ -102,70 +101,29 @@ DEF_CMD(jmp, 12, true, AllowedArgs::_L__, {
   JUMP_ON_ADR(ADR);
 })
 
+//TODO copypase
 DEF_CMD(ja, 13, true, AllowedArgs::_L__, {
-  elem_t tmp1 = 0;
-  elem_t tmp2 = 0;
-  POP(&tmp1);
-  POP(&tmp2);
-
-  if (tmp1 > tmp2) {
-    JUMP_ON_ADR(ADR);
-  }
+  CONDITIONAL_JUMP(tmp1 > tmp2);
 })
 
 DEF_CMD(jae, 14, true, AllowedArgs::_L__, {
-  elem_t tmp1 = 0;
-  elem_t tmp2 = 0;
-  POP(&tmp1);
-  POP(&tmp2);
-
-  if (tmp1 >= tmp2) {
-    JUMP_ON_ADR(ADR);
-  }
+  CONDITIONAL_JUMP(tmp1 >= tmp2);
 })
 
 DEF_CMD(jb, 15, true, AllowedArgs::_L__, {
-  elem_t tmp1 = 0;
-  elem_t tmp2 = 0;
-  POP(&tmp1);
-  POP(&tmp2);
-
-  if (tmp1 < tmp2) {
-    JUMP_ON_ADR(ADR);
-  }
+  CONDITIONAL_JUMP(tmp1 < tmp2);
 })
 
 DEF_CMD(jbe, 16, true, AllowedArgs::_L__, {
-  elem_t tmp1 = 0;
-  elem_t tmp2 = 0;
-  POP(&tmp1);
-  POP(&tmp2);
-
-  if (tmp1 <= tmp2) {
-    JUMP_ON_ADR(ADR);
-  }
+  CONDITIONAL_JUMP(tmp1 <= tmp2);
 })
 
 DEF_CMD(je, 17, true, AllowedArgs::_L__, {
-  elem_t tmp1 = 0;
-  elem_t tmp2 = 0;
-  POP(&tmp1);
-  POP(&tmp2);
-
-  if (IS_EQUAL(tmp1, tmp2)) {
-    JUMP_ON_ADR(ADR);
-  }
+  CONDITIONAL_JUMP(IS_EQUAL(tmp1, tmp2));
 })
 
 DEF_CMD(jne, 18, true, AllowedArgs::_L__, {
-  elem_t tmp1 = 0;
-  elem_t tmp2 = 0;
-  POP(&tmp1);
-  POP(&tmp2);
-
-  if (!IS_EQUAL(tmp1, tmp2)) {
-    JUMP_ON_ADR(ADR);
-  }
+  CONDITIONAL_JUMP(!IS_EQUAL(tmp1, tmp2));
 })
 
 DEF_CMD(call, 19, true, AllowedArgs::_L__, {
@@ -177,4 +135,8 @@ DEF_CMD(ret, 20, false, AllowedArgs::____, {
   elem_t tmp = 0;
   POP(&tmp);
   JUMP_ON_ADR(tmp);
+})
+
+DEF_CMD(memdump, 21, false, AllowedArgs::____, {
+  MEMDUMP();
 })

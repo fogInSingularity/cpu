@@ -1,6 +1,6 @@
 #include "../include/mystring.h"
 
-char* Strchr(String* str, char ch) {
+char* Strchr(String* str, char ch) { //memchr
   ASSERT(str != nullptr);
   ASSERT(str->str != nullptr);
 
@@ -21,6 +21,7 @@ int Strcmp(String* strA, String* strB) {
   ASSERT(strA->str != nullptr);
   ASSERT(strB != nullptr);
   ASSERT(strB->str != nullptr);
+
   return strncmp(strA->str, strB->str, MIN(strA->len, strB->len));
 }
 

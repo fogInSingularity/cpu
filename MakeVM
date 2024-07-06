@@ -1,10 +1,12 @@
 CC = g++
 EXE = vm
 
-DIRS = vmcode lib shared stack darray
+DIRS = vmcode lib shared stack darray algo
 
 SOURCES = $(foreach dir, $(DIRS), $(wildcard $(dir)/source/*.cpp))
 DEFINES = -D_DEBUG
+
+INCLUDE = -I./vmcode/include -I./lib/include -I./shared/include -I./stack/include -I./darray/include -I./algo/include
 
 FLAGS = -fdiagnostics-generate-patch -fdiagnostics-path-format=inline-events \
 -O0 -ggdb -std=c++17 -Wall -Wextra -Weffc++ -Waggressive-loop-optimizations \
@@ -28,10 +30,10 @@ object-size,return,returns-nonnull-attribute,shift,signed-integer-overflow,$\
 undefined,unreachable,vla-bound,vptr
 # -Wlarger-than=8192 -p
 all:
-	@$(CC) $(SOURCES) $(FLAGS) $(DEFINES) -o $(EXE)
+	@$(CC) $(INCLUDE) $(SOURCES) $(FLAGS) $(DEFINES) -o $(EXE)
 
 release:
-	@$(CC) $(SOURCES) -O2 -std=c++17 -Wall -Wextra $(DEFINES) -o $(EXE)
+	@$(CC) $(INCLUDE) $(SOURCES) -O2 -std=c++17 -Wall -Wextra $(DEFINES) -o $(EXE)
 
 clean:
 	@rm vm

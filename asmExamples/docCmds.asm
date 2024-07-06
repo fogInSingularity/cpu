@@ -59,3 +59,5 @@ discr:       ;function defenition (also label)
 call discr   ;function call (push jump adr where to return)
 
 HLT          ;exit point (will return VMError::HLT)
+
+memdump      ; dumps memroy to stderr

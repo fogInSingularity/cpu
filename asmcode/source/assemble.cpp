@@ -2,7 +2,7 @@
 
 //static-----------------------------------------------------------------------
 
-static size_t WalkthroughCnt = 0;
+static size_t WalkthroughCnt = 0;       // REVIEW какого хуя
 static const size_t MinBinBufAlloc = 64;
 static const size_t MultConst = 2;
 static FILE* ErrorStream = stdout;
@@ -161,7 +161,7 @@ AsmError Assembler::ParseAndStore(String* line) {
   errorLineNumber_++;
 
   char* colon = Strchr(line, ':');
-  if (colon != nullptr) { // lable or fn call
+  if (colon != nullptr) { // label or function definition
     if (WalkthroughCnt == 1) {
       char* moveStr = IgnoreSpaces(line->str, line);
 
@@ -309,7 +309,7 @@ AsmError Assembler::ParseCmdWithArgs(String* strArg, cmdKey_t cmdId, uint64_t al
     regId = IsRegPassed({arg.str, (size_t)(plusSign - arg.str)});
     immed = IsNumberPassed({plusSign + 1, arg.len - (size_t)(plusSign - arg.str) - 1});
 
-    if ((regId == Regs::UNKNOWN_REG) || (isnan(immed))) {
+    if ((regId == Regs::UNKNOWN_REG) || isnan(immed)) {
       return AsmError::STX_IDK_ARG;
     }
   } else {

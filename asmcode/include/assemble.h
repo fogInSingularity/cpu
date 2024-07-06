@@ -18,7 +18,7 @@
 #include "commands.h"
 #include "errorMes.h"
 
-struct Label {
+struct Label {        // REVIEW hash collision
   uint32_t labelKey;
   jmpAdr_t pos;
 };
